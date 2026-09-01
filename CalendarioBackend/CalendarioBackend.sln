@@ -1,0 +1,28 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalendarioBackend.Core", "src\CalendarioBackend.Core\CalendarioBackend.Core.csproj", "{2E2B9F2F-5ECB-4453-A30C-BF42A19CF4C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CalendarioBackend.Console", "src\CalendarioBackend.Console\CalendarioBackend.Console.csproj", "{728F6586-97A6-4FE0-92C8-9F5B0551C768}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2E2B9F2F-5ECB-4453-A30C-BF42A19CF4C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E2B9F2F-5ECB-4453-A30C-BF42A19CF4C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E2B9F2F-5ECB-4453-A30C-BF42A19CF4C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E2B9F2F-5ECB-4453-A30C-BF42A19CF4C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{728F6586-97A6-4FE0-92C8-9F5B0551C768}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{728F6586-97A6-4FE0-92C8-9F5B0551C768}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{728F6586-97A6-4FE0-92C8-9F5B0551C768}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{728F6586-97A6-4FE0-92C8-9F5B0551C768}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
