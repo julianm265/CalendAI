@@ -12,6 +12,42 @@ dotnet run --project src/CalendarioBackend.Console
 
 Requiere el SDK de .NET 8 (`dotnet --version` debe reportar 8.x).
 
+## Ejecutar la Web API
+
+```bash
+dotnet run --project src/CalendarioBackend.Api
+```
+
+La API expone, entre otras, estas rutas:
+
+- `GET /api/equipos`
+- `POST /api/equipos`
+- `GET /api/equipos/{id}`
+- `POST /api/equipos/{id}/colaboradores`
+- `POST /api/autenticacion/login`
+- `GET /api/equipos/{id}/eventos?fecha=2026-09-03`
+- `POST /api/equipos/{id}/eventos`
+- `DELETE /api/equipos/{id}/eventos/{eventoId}?fecha=2026-09-03`
+
+## Ejecutar todo con Docker Compose
+
+Desde la carpeta raíz `calendAI`:
+
+```bash
+docker compose up --build
+```
+
+Después abre `http://localhost:5500`. La Web API queda disponible en
+`http://localhost:5080` y el frontend se conecta automáticamente a ella.
+Para detener los servicios:
+
+```bash
+docker compose down
+```
+
+La aplicación usa actualmente almacenamiento en memoria; los equipos y eventos
+se pierden al detener o recrear el contenedor del backend.
+
 ## Estructura del proyecto
 
 ```
@@ -37,6 +73,9 @@ CalendarioBackend/
     │       └── AutenticacionService.cs
     └── CalendarioBackend.Console/        # Programa de consola que demuestra el flujo completo
         └── Program.cs
+    └── CalendarioBackend.Api/            # ASP.NET Core Web API para clientes frontend
+      ├── Controllers/
+      └── Program.cs
 ```
 
 ## Mapeo diagrama → código
