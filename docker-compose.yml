@@ -1,0 +1,23 @@
+services:
+  backend:
+    build:
+      context: ./CalendarioBackend
+      dockerfile: src/CalendarioBackend.Api/Dockerfile
+    container_name: calendai-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      - "5080:8080"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./CalendarioFrontend
+      dockerfile: Dockerfile
+    container_name: calendai-frontend
+    depends_on:
+      - backend
+    ports:
+      - "5500:80"
+    restart: unless-stopped
