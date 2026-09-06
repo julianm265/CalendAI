@@ -32,5 +32,7 @@ public class Dia
 
     public bool EliminarEvento(Guid eventoId) => _eventos.RemoveAll(e => e.Id == eventoId) > 0;
 
+    internal void CargarEvento(Evento evento) => _eventos.Add(evento);
+
     public IEnumerable<Evento> ObtenerEventosOrdenados() => _eventos.OrderBy(e => e.HoraEvento);
 }

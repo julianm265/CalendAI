@@ -5,7 +5,7 @@
 
 import * as api from './api.js';
 import { ApiError } from './api.js';
-import { normalizarEquipo, normalizarEvento, normalizarEventoDelMes, normalizarColaborador } from './normalize.js';
+import { normalizarEquipo, normalizarEvento, normalizarEventoDelMes, normalizarColaborador } from './normalize.js?v=3';
 import { state, setColaborador, setEquipoActivo, cerrarSesion } from './state.js';
 import {
   construirCuadriculaMes, sumarMeses, formatearFechaLarga, formatearMesAño,
@@ -21,6 +21,35 @@ import {
 function mostrarLogin() {
   qs('#screen-login').hidden = false;
   qs('#screen-app').hidden = true;
+  qs('#login-view').hidden = false;
+  qs('#register-view').hidden = true;
+}
+
+async function mostrarRegistro() {
+  qs('#screen-login').hidden = false;
+  qs('#screen-app').hidden = true;
+  qs('#login-view').hidden = true;
+  qs('#register-view').hidden = false;
+  setFormError('register-form-error', '');
+
+  const selector = qs('#register-equipo');
+  selector.innerHTML = '<option value="">Cargando equipos…</option>';
+  try {
+    const equipos = (await api.listarEquipos() || []).map(normalizarEquipo);
+    selector.innerHTML = '<option value="">Selecciona un equipo</option>';
+    for (const equipo of equipos) {
+      const opcion = document.createElement('option');
+      opcion.value = equipo.id;
+      opcion.textContent = equipo.nombreEquipo;
+      selector.appendChild(opcion);
+    }
+    if (equipos.length === 0) {
+      setFormError('register-form-error', 'Primero debe existir un equipo para poder registrarte.');
+    }
+  } catch (error) {
+    selector.innerHTML = '<option value="">No se pudieron cargar los equipos</option>';
+    setFormError('register-form-error', mensajeDeError(error));
+  }
 }
 
 function mostrarApp(vista) {
@@ -106,6 +135,42 @@ async function manejarSubmitLogin(event) {
   } catch (error) {
     qs('#login-password').value = '';
     setFormError('login-form-error', mensajeDeError(error));
+  } finally {
+    setButtonLoading(boton, false);
+  }
+}
+
+async function manejarSubmitRegistro(event) {
+  event.preventDefault();
+  clearFieldErrors(['register-equipo', 'register-usuario', 'register-password']);
+  setFormError('register-form-error', '');
+
+  const equipoId = qs('#register-equipo').value;
+  const usuario = qs('#register-usuario').value.trim();
+  const contraseña = qs('#register-password').value;
+  let valido = true;
+
+  if (!equipoId) { setFieldError('register-equipo', 'Selecciona un equipo.'); valido = false; }
+  if (!usuario) { setFieldError('register-usuario', 'Escribe un usuario.'); valido = false; }
+  if (contraseña.length < 6) {
+    setFieldError('register-password', 'La contraseña debe tener al menos 6 caracteres.');
+    valido = false;
+  }
+  if (!valido) return;
+
+  const boton = qs('#register-submit');
+  setButtonLoading(boton, true, 'Registrando…');
+  try {
+    const respuesta = await api.registrarColaborador(equipoId, usuario, contraseña);
+    const colaborador = normalizarColaborador(respuesta?.colaborador ?? respuesta);
+    const equipo = normalizarEquipo(await api.obtenerEquipo(equipoId));
+    setColaborador(colaborador);
+    setEquipoActivo({ id: equipo.id, nombreEquipo: equipo.nombreEquipo });
+    qs('#form-register').reset();
+    toast(`Usuario "${colaborador.usuario}" creado.`, 'success');
+    await irACalendario({ id: equipo.id, nombreEquipo: equipo.nombreEquipo });
+  } catch (error) {
+    setFormError('register-form-error', mensajeDeError(error));
   } finally {
     setButtonLoading(boton, false);
   }
@@ -577,6 +642,9 @@ function mensajeDeError(error) {
 
 function inicializar() {
   qs('#form-login').addEventListener('submit', manejarSubmitLogin);
+  qs('#form-register').addEventListener('submit', manejarSubmitRegistro);
+  qs('#go-to-register').addEventListener('click', mostrarRegistro);
+  qs('#back-to-login').addEventListener('click', mostrarLogin);
   qs('#go-to-teams').addEventListener('click', irAEquipos);
 
   qs('#form-crear-equipo').addEventListener('submit', manejarSubmitCrearEquipo);

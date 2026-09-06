@@ -45,8 +45,19 @@ Para detener los servicios:
 docker compose down
 ```
 
-La aplicación usa actualmente almacenamiento en memoria; los equipos y eventos
-se pierden al detener o recrear el contenedor del backend.
+La aplicación usa PostgreSQL para conservar equipos, colaboradores y eventos.
+El esquema se encuentra en `database/001-schema.sql` y Docker lo ejecuta al crear
+el volumen por primera vez. La implementación de PostgreSQL está en
+`src/CalendarioBackend.Core/Persistence` y `Repositories/PostgresEquipoRepository.cs`.
+
+Para inspeccionar la base de datos:
+
+```powershell
+docker exec -it calendai-postgres psql -U calendai_user -d calendai
+```
+
+La configuración local usa `localhost`; dentro de Docker, el backend usa `postgres`
+como nombre del host mediante `ConnectionStrings__Calendai`.
 
 ## Estructura del proyecto
 
@@ -66,7 +77,9 @@ CalendarioBackend/
     │   │   └── Equipo.cs
     │   ├── Repositories/                 # Persistencia (interfaz + implementación en memoria)
     │   │   ├── IEquipoRepository.cs
-    │   │   └── InMemoryEquipoRepository.cs
+    │   │   ├── InMemoryEquipoRepository.cs
+    │   │   └── PostgresEquipoRepository.cs
+    │   │   ├── Persistence/                  # DbContext y filas de almacenamiento
     │   └── Services/                     # Lógica de negocio / casos de uso
     │       ├── CalendarioService.cs
     │       ├── EquipoService.cs
@@ -126,5 +139,5 @@ usando el calendario gregoriano de .NET.
   `CalendarioService`, `EquipoService` y `AutenticacionService` vía controladores/minimal APIs.
 - Agregar un proyecto de pruebas (`CalendarioBackend.Tests` con xUnit) para las reglas de
   negocio (año bisiesto, mes de 31 días, colisión de eventos a la misma hora, login inválido, etc.).
-- Sustituir `InMemoryEquipoRepository` por una implementación con Entity Framework Core
-  y una base de datos relacional.
+- Añadir migraciones de Entity Framework Core si el esquema deja de administrarse
+  mediante `database/001-schema.sql`.

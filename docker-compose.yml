@@ -1,4 +1,18 @@
 services:
+  postgres:
+    image: postgres:16
+    container_name: calendai-postgres
+    environment:
+      POSTGRES_DB: calendai
+      POSTGRES_USER: calendai_user
+      POSTGRES_PASSWORD: calendai_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - calendai_postgres_data:/var/lib/postgresql/data
+      - ./CalendarioBackend/database:/docker-entrypoint-initdb.d:ro
+    restart: unless-stopped
+
   backend:
     build:
       context: ./CalendarioBackend
@@ -7,8 +21,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Calendai: Host=postgres;Port=5432;Database=calendai;Username=calendai_user;Password=calendai_password
     ports:
       - "5080:8080"
+    depends_on:
+      - postgres
     restart: unless-stopped
 
   frontend:
@@ -21,3 +38,6 @@ services:
     ports:
       - "5500:80"
     restart: unless-stopped
+
+volumes:
+  calendai_postgres_data:

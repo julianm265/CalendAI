@@ -10,6 +10,7 @@ namespace CalendarioBackend.Core.Repositories;
 public interface IEquipoRepository
 {
     Equipo Agregar(Equipo equipo);
+    void Guardar(Equipo equipo);
     Equipo? ObtenerPorId(Guid id);
     Equipo? ObtenerPorNombre(string nombre);
     IReadOnlyList<Equipo> ObtenerTodos();

@@ -1,5 +1,7 @@
 using CalendarioBackend.Core.Repositories;
+using CalendarioBackend.Core.Persistence;
 using CalendarioBackend.Core.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,10 +16,14 @@ builder.Services.AddCors(options =>
 	});
 });
 
-builder.Services.AddSingleton<IEquipoRepository, InMemoryEquipoRepository>();
-builder.Services.AddSingleton<EquipoService>();
-builder.Services.AddSingleton<CalendarioService>();
-builder.Services.AddSingleton<AutenticacionService>();
+var connectionString = builder.Configuration.GetConnectionString("Calendai")
+	?? throw new InvalidOperationException("Falta la cadena de conexión 'Calendai'.");
+
+builder.Services.AddDbContext<CalendaiDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddScoped<IEquipoRepository, PostgresEquipoRepository>();
+builder.Services.AddScoped<EquipoService>();
+builder.Services.AddScoped<CalendarioService>();
+builder.Services.AddScoped<AutenticacionService>();
 
 var app = builder.Build();
 

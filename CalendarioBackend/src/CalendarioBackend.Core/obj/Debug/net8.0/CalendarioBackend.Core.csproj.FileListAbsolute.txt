@@ -21,3 +21,4 @@ C:\Users\andre\Desktop\calendAI\CalendarioBackend\src\CalendarioBackend.Core\obj
 C:\Users\andre\Desktop\calendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\refint\CalendarioBackend.Core.dll
 C:\Users\andre\Desktop\calendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\CalendarioBackend.Core.pdb
 C:\Users\andre\Desktop\calendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\ref\CalendarioBackend.Core.dll
+C:\Users\andre\Desktop\calendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\CalendarioBackend.Core.csproj.AssemblyReference.cache

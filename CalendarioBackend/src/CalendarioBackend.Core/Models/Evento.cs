@@ -15,6 +15,17 @@ public class Evento
     public string? Descripcion { get; set; }
     public Guid? ColaboradorOrganizadorId { get; set; }
 
+    internal Evento(Guid id, string nombreEvento, TimeOnly horaEvento, string? lugarEvento,
+        string? descripcion, Guid? colaboradorOrganizadorId)
+    {
+        Id = id;
+        NombreEvento = nombreEvento;
+        HoraEvento = horaEvento;
+        LugarEvento = lugarEvento;
+        Descripcion = descripcion;
+        ColaboradorOrganizadorId = colaboradorOrganizadorId;
+    }
+
     public Evento(string nombreEvento, TimeOnly horaEvento, string? lugarEvento = null,
         string? descripcion = null, Guid? colaboradorOrganizadorId = null)
     {

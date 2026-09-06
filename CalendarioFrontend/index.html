@@ -22,24 +22,57 @@
   </div>
   <div class="login-panel">
     <div class="login-panel-inner">
-      <h1>Inicia sesión</h1>
-      <form id="form-login" class="stack-form" novalidate>
-        <div class="field">
-          <label for="login-usuario">Usuario</label>
-          <input id="login-usuario" name="usuario" type="text" autocomplete="username" required>
-          <p class="field-error" id="login-usuario-error" role="alert"></p>
-        </div>
-        <div class="field">
-          <label for="login-password">Contraseña</label>
-          <input id="login-password" name="contraseña" type="password" autocomplete="current-password" required>
-          <p class="field-error" id="login-password-error" role="alert"></p>
-        </div>
-        <p class="form-error" id="login-form-error" role="alert"></p>
-        <button type="submit" class="btn btn-primary btn-block" id="login-submit">Iniciar sesión</button>
-      </form>
-      <p class="login-alt">¿No tienes equipo o usuario todavía?
-        <button type="button" class="link-btn" id="go-to-teams">Explora los equipos</button>
-      </p>
+      <div id="login-view">
+        <h1>Inicia sesión</h1>
+        <form id="form-login" class="stack-form" novalidate>
+          <div class="field">
+            <label for="login-usuario">Usuario</label>
+            <input id="login-usuario" name="usuario" type="text" autocomplete="username" required>
+            <p class="field-error" id="login-usuario-error" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="login-password">Contraseña</label>
+            <input id="login-password" name="contraseña" type="password" autocomplete="current-password" required>
+            <p class="field-error" id="login-password-error" role="alert"></p>
+          </div>
+          <p class="form-error" id="login-form-error" role="alert"></p>
+          <button type="submit" class="btn btn-primary btn-block" id="login-submit">Iniciar sesión</button>
+        </form>
+        <p class="login-alt">¿No tienes equipo o usuario todavía?
+          <button type="button" class="link-btn" id="go-to-register">Crear usuario</button>
+        </p>
+        <p class="login-alt">¿Quieres consultar los equipos?
+          <button type="button" class="link-btn" id="go-to-teams">Explora los equipos</button>
+        </p>
+      </div>
+
+      <div id="register-view" hidden>
+        <h1>Crea tu usuario</h1>
+        <form id="form-register" class="stack-form" novalidate>
+          <div class="field">
+            <label for="register-equipo">Equipo</label>
+            <select id="register-equipo" required>
+              <option value="">Selecciona un equipo</option>
+            </select>
+            <p class="field-error" id="register-equipo-error" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="register-usuario">Usuario</label>
+            <input id="register-usuario" type="text" autocomplete="username" required>
+            <p class="field-error" id="register-usuario-error" role="alert"></p>
+          </div>
+          <div class="field">
+            <label for="register-password">Contraseña</label>
+            <input id="register-password" type="password" minlength="6" autocomplete="new-password" required>
+            <p class="field-error" id="register-password-error" role="alert"></p>
+          </div>
+          <p class="form-error" id="register-form-error" role="alert"></p>
+          <button type="submit" class="btn btn-primary btn-block" id="register-submit">Registrarme</button>
+        </form>
+        <p class="login-alt">
+          <button type="button" class="link-btn" id="back-to-login">Volver a iniciar sesión</button>
+        </p>
+      </div>
       <p class="disclosure">La sesión se guarda solo en este navegador. El backend todavía no usa JWT ni protege
         estas rutas: cualquier persona con acceso a la API puede leer o modificar los datos.</p>
     </div>
@@ -197,6 +230,6 @@
   </div>
 </div>
 
-<script type="module" src="app.js"></script>
+<script type="module" src="app.js?v=3"></script>
 </body>
 </html>
