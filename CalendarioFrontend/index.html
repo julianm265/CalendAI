@@ -15,34 +15,46 @@
 
 <!-- ============================== LOGIN ============================== -->
 <section id="screen-login" class="screen screen-login">
-  <div class="login-hero">
-    <p class="wordmark">CalendarioBackend</p>
-    <p class="tagline">Agenda compartida para equipos</p>
-    <p class="hero-note">Organiza reuniones y eventos por equipo, mes a mes, en un solo lugar.</p>
-  </div>
-  <div class="login-panel">
-    <div class="login-panel-inner">
-      <h1>Inicia sesión</h1>
-      <form id="form-login" class="stack-form" novalidate>
-        <div class="field">
-          <label for="login-usuario">Usuario</label>
-          <input id="login-usuario" name="usuario" type="text" autocomplete="username" required>
-          <p class="field-error" id="login-usuario-error" role="alert"></p>
+  <div class="bg-shape shape-1"></div>
+  <div class="bg-shape shape-2"></div>
+  
+  <div class="card">
+    <div class="logo"><div class="logo-icon"></div> CalendAI</div>
+    <!-- Agregamos IDs aquí para que JS pueda cambiarles el texto -->
+    <h1 id="auth-title">Bienvenido de vuelta</h1>
+    <p class="subtitle" id="auth-subtitle">Ingresa a tu cuenta para continuar</p>
+    
+    <form id="form-login" class="stack-form" novalidate>
+      <div class="field">
+        <label for="login-usuario">Usuario</label>
+        <div class="input-group">
+          <span class="icon">👤</span>
+          <input id="login-usuario" name="usuario" type="text" placeholder="tu.usuario" autocomplete="username" required>
         </div>
-        <div class="field">
-          <label for="login-password">Contraseña</label>
-          <input id="login-password" name="contraseña" type="password" autocomplete="current-password" required>
-          <p class="field-error" id="login-password-error" role="alert"></p>
+        <p class="field-error" id="login-usuario-error" role="alert"></p>
+      </div>
+
+      <div class="field">
+        <label for="login-password">Contraseña</label>
+        <div class="input-group">
+          <span class="icon">🔒</span>
+          <input id="login-password" name="contraseña" type="password" placeholder="••••••••••••" autocomplete="current-password" required>
         </div>
-        <p class="form-error" id="login-form-error" role="alert"></p>
-        <button type="submit" class="btn btn-primary btn-block" id="login-submit">Iniciar sesión</button>
-      </form>
-      <p class="login-alt">¿No tienes equipo o usuario todavía?
-        <button type="button" class="link-btn" id="go-to-teams">Explora los equipos</button>
-      </p>
-      <p class="disclosure">La sesión se guarda solo en este navegador. El backend todavía no usa JWT ni protege
-        estas rutas: cualquier persona con acceso a la API puede leer o modificar los datos.</p>
+        <p class="field-error" id="login-password-error" role="alert"></p>
+      </div>
+
+      <p class="form-error" id="login-form-error" role="alert"></p>
+      <button type="submit" class="btn-primary" id="login-submit">Iniciar sesión</button>
+    </form>
+
+    <div class="footer">
+      <span id="auth-switch-text">¿No tienes usuario todavía?</span> 
+      <button type="button" class="link-btn" id="toggle-auth-mode" style="background:none; border:none; color:#2f6fdb; font-weight:500; cursor:pointer; font-size:inherit;">Regístrate</button>
     </div>
+    
+    <p class="disclosure" style="margin-top:20px; font-size:11px; color:#6b7a99; text-align:center; line-height:1.4;">
+      La sesión se guarda solo en este navegador. El backend todavía no usa JWT ni protege estas rutas.
+    </p>
   </div>
 </section>
 

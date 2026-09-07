@@ -67,25 +67,73 @@ function manejarCerrarSesion() {
   mostrarLogin();
 }
 
-/* ==================================== LOGIN ==================================== */
+/* ==================================== LOGIN & REGISTRO ==================================== */
+
+let isRegistering = false;
+
+// Función para alternar visualmente entre Iniciar Sesión y Registrarse
+function cambiarModoAuth(e) {
+  if (e) e.preventDefault();
+  isRegistering = !isRegistering;
+  
+  clearFieldErrors(['login-usuario', 'login-password', 'login-equipo']);
+  setFormError('login-form-error', '');
+  qs('#form-login').reset();
+
+  const title = qs('#auth-title');
+  const subtitle = qs('#auth-subtitle');
+  const submitBtn = qs('#login-submit');
+  const teamFieldWrapper = qs('#login-team-wrapper');
+  const optionsBlock = qs('#login-options');
+  const switchText = qs('#auth-switch-text');
+  const switchBtn = qs('#toggle-auth-mode');
+
+  if (isRegistering) {
+    title.textContent = 'Crea tu cuenta';
+    subtitle.textContent = 'Regístrate para empezar a organizar';
+    submitBtn.textContent = 'Registrarse';
+    if (teamFieldWrapper) teamFieldWrapper.style.display = 'block';
+    if (optionsBlock) optionsBlock.style.display = 'none';
+    switchText.textContent = '¿Ya tienes cuenta? ';
+    switchBtn.textContent = 'Inicia sesión';
+  } else {
+    title.textContent = 'Bienvenido de vuelta';
+    subtitle.textContent = 'Ingresa a tu cuenta para continuar';
+    submitBtn.textContent = 'Iniciar sesión';
+    if (teamFieldWrapper) teamFieldWrapper.style.display = 'none';
+    if (optionsBlock) optionsBlock.style.display = 'flex';
+    switchText.textContent = '¿No tienes equipo o usuario todavía? ';
+    switchBtn.textContent = 'Regístrate';
+  }
+}
 
 async function manejarSubmitLogin(event) {
   event.preventDefault();
-  clearFieldErrors(['login-usuario', 'login-password']);
+  clearFieldErrors(['login-usuario', 'login-password', 'login-equipo']);
   setFormError('login-form-error', '');
 
   const usuario = qs('#login-usuario').value.trim();
   const contraseña = qs('#login-password').value;
+  const equipoInput = qs('#login-equipo');
+  const equipoId = equipoInput ? equipoInput.value.trim() : 'default';
 
   let valido = true;
   if (!usuario) { setFieldError('login-usuario', 'Escribe tu usuario.'); valido = false; }
   if (!contraseña) { setFieldError('login-password', 'Escribe tu contraseña.'); valido = false; }
+  if (isRegistering && !equipoId) { setFieldError('login-equipo', 'Escribe el equipo o ID.'); valido = false; }
   if (!valido) return;
 
   const boton = qs('#login-submit');
-  setButtonLoading(boton, true, 'Iniciando sesión…');
+  setButtonLoading(boton, true, isRegistering ? 'Registrando…' : 'Iniciando sesión…');
 
   try {
+    if (isRegistering) {
+      // 1. Registrar colaborador en el equipo especificado (o 'default')
+      await api.registrarColaborador(equipoId, usuario, contraseña);
+      toast(`Cuenta "${usuario}" creada con éxito.`, 'success');
+    }
+
+    // 2. Ejecutar login normal
     const respuesta = await api.iniciarSesion(usuario, contraseña);
     const colaborador = normalizarColaborador(respuesta?.colaborador ?? respuesta);
 
@@ -95,11 +143,15 @@ async function manejarSubmitLogin(event) {
     }
 
     setColaborador(colaborador);
-    qs('#form-login').reset(); // nunca dejar la contraseña en el formulario
+    qs('#form-login').reset();
     toast(`Bienvenido, ${colaborador.usuario}.`, 'success');
 
+    // Si ya tenemos un equipo activo en el state o registramos con uno
     if (state.equipoActivo) {
       await irACalendario(state.equipoActivo);
+    } else if (isRegistering && equipoId) {
+      // Intentar cargar o enlazar el equipo registrado
+      await irACalendario({ id: equipoId, nombreEquipo: equipoId });
     } else {
       irAEquipos();
     }
@@ -576,8 +628,15 @@ function mensajeDeError(error) {
 /* ===================================== Arranque ===================================== */
 
 function inicializar() {
+  qs('#toggle-auth-mode').addEventListener('click', cambiarModoAuth);
+
+const toggleBtn = qs('#toggle-auth-mode');
+if (toggleBtn) {
+  toggleBtn.addEventListener('click', cambiarModoAuth);
+}
+
   qs('#form-login').addEventListener('submit', manejarSubmitLogin);
-  qs('#go-to-teams').addEventListener('click', irAEquipos);
+  // qs('#go-to-teams').addEventListener('click', irAEquipos);    prueba para ir a equipos sin login
 
   qs('#form-crear-equipo').addEventListener('submit', manejarSubmitCrearEquipo);
 
