@@ -33,3 +33,15 @@ C:\Users\diego\OneDrive\Desktop\CalendAI\CalendarioBackend\src\CalendarioBackend
 C:\Users\diego\OneDrive\Desktop\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\refint\CalendarioBackend.Core.dll
 C:\Users\diego\OneDrive\Desktop\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\CalendarioBackend.Core.pdb
 C:\Users\diego\OneDrive\Desktop\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\ref\CalendarioBackend.Core.dll
+C:\Users\andre\Desktop\candai\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\bin\Debug\net8.0\CalendarioBackend.Core.deps.json
+C:\Users\andre\Desktop\candai\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\bin\Debug\net8.0\CalendarioBackend.Core.dll
+C:\Users\andre\Desktop\candai\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\bin\Debug\net8.0\CalendarioBackend.Core.pdb
+C:\Users\andre\Desktop\candai\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\CalendarioBackend.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\andre\Desktop\candai\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\CalendarioBackend.Core.AssemblyInfoInputs.cache
+C:\Users\andre\Desktop\candai\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\CalendarioBackend.Core.AssemblyInfo.cs
+C:\Users\andre\Desktop\candai\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\CalendarioBackend.Core.csproj.CoreCompileInputs.cache
+C:\Users\andre\Desktop\candai\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\CalendarioBackend.Core.sourcelink.json
+C:\Users\andre\Desktop\candai\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\CalendarioBackend.Core.dll
+C:\Users\andre\Desktop\candai\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\refint\CalendarioBackend.Core.dll
+C:\Users\andre\Desktop\candai\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\CalendarioBackend.Core.pdb
+C:\Users\andre\Desktop\candai\CalendAI\CalendarioBackend\src\CalendarioBackend.Core\obj\Debug\net8.0\ref\CalendarioBackend.Core.dll

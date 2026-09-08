@@ -76,7 +76,7 @@ function cambiarModoAuth(e) {
   if (e) e.preventDefault();
   isRegistering = !isRegistering;
   
-  clearFieldErrors(['login-usuario', 'login-password', 'login-equipo']);
+  clearFieldErrors(['login-usuario', 'login-password']);
   setFormError('login-form-error', '');
   qs('#form-login').reset();
 
@@ -102,25 +102,21 @@ function cambiarModoAuth(e) {
     submitBtn.textContent = 'Iniciar sesión';
     if (teamFieldWrapper) teamFieldWrapper.style.display = 'none';
     if (optionsBlock) optionsBlock.style.display = 'flex';
-    switchText.textContent = '¿No tienes equipo o usuario todavía? ';
+    switchText.textContent = '¿No tienes usuario todavía? ';
     switchBtn.textContent = 'Regístrate';
   }
 }
 
 async function manejarSubmitLogin(event) {
   event.preventDefault();
-  clearFieldErrors(['login-usuario', 'login-password', 'login-equipo']);
+  clearFieldErrors(['login-usuario', 'login-password']);
   setFormError('login-form-error', '');
 
   const usuario = qs('#login-usuario').value.trim();
   const contraseña = qs('#login-password').value;
-  const equipoInput = qs('#login-equipo');
-  const equipoId = equipoInput ? equipoInput.value.trim() : 'default';
-
   let valido = true;
   if (!usuario) { setFieldError('login-usuario', 'Escribe tu usuario.'); valido = false; }
   if (!contraseña) { setFieldError('login-password', 'Escribe tu contraseña.'); valido = false; }
-  if (isRegistering && !equipoId) { setFieldError('login-equipo', 'Escribe el equipo o ID.'); valido = false; }
   if (!valido) return;
 
   const boton = qs('#login-submit');
@@ -128,8 +124,8 @@ async function manejarSubmitLogin(event) {
 
   try {
     if (isRegistering) {
-      // 1. Registrar colaborador en el equipo especificado (o 'default')
-      await api.registrarColaborador(equipoId, usuario, contraseña);
+      // La cuenta se crea sin equipo; este se puede elegir o crear después.
+      await api.registrarUsuario(usuario, contraseña);
       toast(`Cuenta "${usuario}" creada con éxito.`, 'success');
     }
 
@@ -146,14 +142,17 @@ async function manejarSubmitLogin(event) {
     qs('#form-login').reset();
     toast(`Bienvenido, ${colaborador.usuario}.`, 'success');
 
-    // Si ya tenemos un equipo activo en el state o registramos con uno
+    // Abrir directamente el calendario usando el equipo guardado o el primero disponible.
     if (state.equipoActivo) {
       await irACalendario(state.equipoActivo);
-    } else if (isRegistering && equipoId) {
-      // Intentar cargar o enlazar el equipo registrado
-      await irACalendario({ id: equipoId, nombreEquipo: equipoId });
     } else {
-      irAEquipos();
+      const equiposRespuesta = await api.listarEquipos();
+      const equipos = (Array.isArray(equiposRespuesta) ? equiposRespuesta : []).map(normalizarEquipo);
+      if (equipos.length > 0) {
+        await irACalendario(equipos[0]);
+      } else {
+        irAEquipos();
+      }
     }
   } catch (error) {
     qs('#login-password').value = '';
@@ -629,11 +628,6 @@ function mensajeDeError(error) {
 
 function inicializar() {
   qs('#toggle-auth-mode').addEventListener('click', cambiarModoAuth);
-
-const toggleBtn = qs('#toggle-auth-mode');
-if (toggleBtn) {
-  toggleBtn.addEventListener('click', cambiarModoAuth);
-}
 
   qs('#form-login').addEventListener('submit', manejarSubmitLogin);
   // qs('#go-to-teams').addEventListener('click', irAEquipos);    prueba para ir a equipos sin login

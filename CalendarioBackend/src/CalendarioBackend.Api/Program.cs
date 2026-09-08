@@ -50,7 +50,7 @@ app.Use(async (context, next) =>
 // FRONTEND
 // ============================================================
 
-// Ruta física de CalendarioFrontend
+// Ruta física de CalendarioFrontend cuando la API se ejecuta fuera de Docker.
 var frontendPath = Path.GetFullPath(
     Path.Combine(
         builder.Environment.ContentRootPath,
@@ -61,18 +61,14 @@ var frontendPath = Path.GetFullPath(
     )
 );
 
-var frontendProvider = new PhysicalFileProvider(frontendPath);
-
-// Sirve index.html, CSS, JS, etc.
-app.UseDefaultFiles(new DefaultFilesOptions
+if (Directory.Exists(frontendPath))
 {
-    FileProvider = frontendProvider
-});
+    var frontendProvider = new PhysicalFileProvider(frontendPath);
 
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = frontendProvider
-});
+    // Sirve el frontend cuando se ejecuta la API directamente en el host.
+    app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = frontendProvider });
+    app.UseStaticFiles(new StaticFileOptions { FileProvider = frontendProvider });
+}
 
 // ============================================================
 // API
@@ -86,15 +82,15 @@ app.MapControllers();
 
 // Si entramos a una ruta que no sea de la API,
 // devolvemos el index.html.
-app.MapFallback(async context =>
+if (Directory.Exists(frontendPath))
 {
-    context.Response.ContentType = "text/html";
-
-    var indexPath = Path.Combine(frontendPath, "index.html");
-
-    await context.Response.SendFileAsync(indexPath);
-});
+    app.MapFallback(async context =>
+    {
+        context.Response.ContentType = "text/html";
+        await context.Response.SendFileAsync(Path.Combine(frontendPath, "index.html"));
+    });
+}
 
 // ============================================================
 
-app.Run("http://localhost:3000");
+app.Run();

@@ -22,6 +22,25 @@ public class AutenticacionController : ControllerBase
             ? Unauthorized()
             : Ok(new ColaboradorResumen(colaborador.Id, colaborador.Usuario));
     }
+
+    [HttpPost("registro")]
+    public ActionResult<ColaboradorResumen> Registrar(RegistroRequest request)
+    {
+        try
+        {
+            var colaborador = _autenticacionService.RegistrarUsuario(request.Usuario, request.Contraseña);
+            return Created("api/autenticacion/registro", new ColaboradorResumen(colaborador.Id, colaborador.Usuario));
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(new { error = exception.Message });
+        }
+        catch (InvalidOperationException exception)
+        {
+            return Conflict(new { error = exception.Message });
+        }
+    }
 }
 
 public sealed record LoginRequest(string Usuario, string Contraseña);
+public sealed record RegistroRequest(string Usuario, string Contraseña);

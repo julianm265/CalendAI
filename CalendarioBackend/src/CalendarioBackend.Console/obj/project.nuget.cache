@@ -1,13 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "NnBqM+PZ5/0=",
+  "dgSpecHash": "5GZfoq7AFYE=",
   "success": true,
-  "projectFilePath": "C:\\Users\\diego\\OneDrive\\Desktop\\CalendAI\\CalendarioBackend\\src\\CalendarioBackend.Console\\CalendarioBackend.Console.csproj",
-  "expectedPackageFiles": [
-    "C:\\Users\\diego\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.25\\microsoft.netcore.app.ref.8.0.25.nupkg.sha512",
-    "C:\\Users\\diego\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.25\\microsoft.windowsdesktop.app.ref.8.0.25.nupkg.sha512",
-    "C:\\Users\\diego\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.25\\microsoft.aspnetcore.app.ref.8.0.25.nupkg.sha512",
-    "C:\\Users\\diego\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\8.0.25\\microsoft.netcore.app.host.win-x64.8.0.25.nupkg.sha512"
-  ],
+  "projectFilePath": "C:\\Users\\andre\\Desktop\\candai\\CalendAI\\CalendarioBackend\\src\\CalendarioBackend.Console\\CalendarioBackend.Console.csproj",
+  "expectedPackageFiles": [],
   "logs": []
 }

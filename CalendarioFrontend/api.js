@@ -112,6 +112,13 @@ export function registrarColaborador(equipoId, usuario, contraseña) {
 
 /* ---------------------------- Autenticación ------------------------------ */
 
+export function registrarUsuario(usuario, contraseña) {
+  return apiFetch('/autenticacion/registro', {
+    method: 'POST',
+    body: JSON.stringify({ usuario, contraseña }),
+  });
+}
+
 export function iniciarSesion(usuario, contraseña) {
   return apiFetch('/autenticacion/login', {
     method: 'POST',
