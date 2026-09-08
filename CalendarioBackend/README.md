@@ -25,6 +25,7 @@ La API expone, entre otras, estas rutas:
 - `GET /api/equipos/{id}`
 - `POST /api/equipos/{id}/colaboradores`
 - `POST /api/autenticacion/login`
+- `POST /api/autenticacion/registro`
 - `GET /api/equipos/{id}/eventos?fecha=2026-09-03`
 - `POST /api/equipos/{id}/eventos`
 - `DELETE /api/equipos/{id}/eventos/{eventoId}?fecha=2026-09-03`
@@ -37,7 +38,7 @@ Desde la carpeta raíz `calendAI`:
 docker compose up --build
 ```
 
-Después abre `http://localhost:5500`. La Web API queda disponible en
+Después abre `http://localhost:3000`. La Web API queda disponible en
 `http://localhost:5080` y el frontend se conecta automáticamente a ella.
 Para detener los servicios:
 
@@ -45,7 +46,7 @@ Para detener los servicios:
 docker compose down
 ```
 
-La aplicación usa actualmente almacenamiento en memoria; los equipos y eventos
+La aplicación usa actualmente almacenamiento en memoria; las cuentas, equipos y eventos
 se pierden al detener o recrear el contenedor del backend.
 
 ## Estructura del proyecto

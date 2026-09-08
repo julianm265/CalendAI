@@ -109,10 +109,10 @@ mostrar datos simulados.
 
 ## Flujo de la aplicación
 
-1. **Inicio de sesión** (`POST /api/autenticacion/login`). Como el backend
-   valida al colaborador buscándolo en todos los equipos (sin decir a cuál
-   pertenece), después de iniciar sesión el frontend pide elegir el **equipo
-   activo** por separado.
+1. **Inicio de sesión y registro** (`POST /api/autenticacion/login` y
+  `POST /api/autenticacion/registro`). Una cuenta se puede crear e iniciar
+  sesión sin pertenecer a un equipo. Después de iniciar sesión, el frontend
+  permite elegir o crear un equipo si se desea usar un calendario compartido.
 2. **Equipos**: listar (`GET /api/equipos`), crear (`POST /api/equipos`) y
    elegir el equipo activo. Como aún no hay ningún colaborador la primera vez
    que se crea un equipo, se puede llegar a esta pantalla también **sin haber
