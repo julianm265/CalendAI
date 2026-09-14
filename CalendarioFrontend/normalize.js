@@ -16,11 +16,11 @@ export function normalizarColaborador(raw) {
 
 export function normalizarEquipo(raw) {
   if (!raw) return null;
-  const colaboradoresRaw =
-    raw.colaboradores ?? raw.Colaboradores ?? raw.lColaboradores ?? raw.LColaboradores ?? [];
+  const colaboradoresRaw = [raw.colaboradores, raw.Colaboradores, raw.lColaboradores, raw.LColaboradores]
+    .find(Array.isArray) ?? [];
   return {
     id: raw.id ?? raw.Id ?? null,
-    nombreEquipo: raw.nombreEquipo ?? raw.NombreEquipo ?? '',
+    nombreEquipo: raw.nombreEquipo ?? raw.NombreEquipo ?? raw.nombre ?? raw.Nombre ?? '',
     colaboradores: colaboradoresRaw.map(normalizarColaborador),
   };
 }

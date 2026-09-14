@@ -46,8 +46,19 @@ Para detener los servicios:
 docker compose down
 ```
 
-La aplicación usa actualmente almacenamiento en memoria; las cuentas, equipos y eventos
-se pierden al detener o recrear el contenedor del backend.
+La aplicación usa PostgreSQL mediante Entity Framework Core. Docker Compose crea el servicio
+`postgres` y conserva sus datos en el volumen `calendai-postgres-data`; las tablas se crean
+automáticamente al iniciar la API. Las cuentas, equipos y eventos sobreviven a reinicios del
+backend y el login consulta siempre el mismo repositorio persistente de colaboradores.
+
+La cadena de conexión local está en `appsettings.json` y Docker la sobrescribe mediante
+`ConnectionStrings__Calendario` para usar `Host=postgres`. Para borrar todos los datos de
+desarrollo, ejecuta `docker compose down -v`; `docker compose down` conserva la base.
+
+Los usuarios que solo existían en la implementación anterior en memoria no pueden recuperarse
+después de haber detenido el contenedor, porque no había un origen persistente que migrar. A
+partir de esta implementación, los nuevos registros y colaboradores de equipos se guardan en
+PostgreSQL y comparten una restricción única por usuario.
 
 ## Estructura del proyecto
 

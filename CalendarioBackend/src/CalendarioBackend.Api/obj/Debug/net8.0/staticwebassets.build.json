@@ -1,1 +1,11 @@
-{"Version":1,"Hash":"3tBxe4tyqKB06CGHKCHxksYUgsxvWeRY0/kRud2kGv4=","Source":"CalendarioBackend.Api","BasePath":"/","Mode":"Root","ManifestType":"Build","ReferencedProjectsConfiguration":[],"DiscoveryPatterns":[],"Assets":[],"Endpoints":[]}
+{
+  "Version": 1,
+  "Hash": "Fe6mTaJLlxMHxWS+ulYRf4DPi6WjtGxdTyw0lrJufnM=",
+  "Source": "CalendarioBackend.Api",
+  "BasePath": "_content/CalendarioBackend.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
