@@ -19,6 +19,8 @@ public class InMemoryEquipoRepository : IEquipoRepository
         return equipo;
     }
 
+    public void Guardar(Equipo equipo) => _equipos[equipo.Id] = equipo;
+
     public Equipo? ObtenerPorId(Guid id) =>
         _equipos.TryGetValue(id, out var equipo) ? equipo : null;
 

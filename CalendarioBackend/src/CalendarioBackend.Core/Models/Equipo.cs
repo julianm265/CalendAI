@@ -24,6 +24,13 @@ public class Equipo
         Calendario = new Calendario();
     }
 
+    internal Equipo(Guid id, string nombreEquipo, Calendario calendario)
+    {
+        Id = id;
+        NombreEquipo = nombreEquipo;
+        Calendario = calendario;
+    }
+
     public void AgregarColaborador(Colaborador colaborador)
     {
         if (_colaboradores.Any(c => c.Usuario.Equals(colaborador.Usuario, StringComparison.OrdinalIgnoreCase)))

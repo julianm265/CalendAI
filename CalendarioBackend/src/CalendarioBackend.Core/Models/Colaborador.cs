@@ -26,7 +26,16 @@ public class Colaborador
         ContraseñaHash = Hash(contraseña);
     }
 
+    internal Colaborador(Guid id, string usuario, string contraseñaHash)
+    {
+        Id = id;
+        Usuario = usuario;
+        ContraseñaHash = contraseñaHash;
+    }
+
     public bool ValidarContraseña(string intento) => ContraseñaHash == Hash(intento);
+
+    internal string ObtenerContraseñaHash() => ContraseñaHash;
 
     public void CambiarContraseña(string actual, string nueva)
     {

@@ -1,4 +1,20 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: calendai-postgres
+    environment:
+      POSTGRES_DB: calendai
+      POSTGRES_USER: calendai
+      POSTGRES_PASSWORD: calendai_dev
+    volumes:
+      - calendai-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calendai -d calendai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   backend:
     build:
       context: ./CalendarioBackend
@@ -7,6 +23,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Calendario: Host=postgres;Port=5432;Database=calendai;Username=calendai;Password=calendai_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "5080:8080"
     restart: unless-stopped
@@ -21,3 +41,6 @@ services:
     ports:
       - "3000:80"
     restart: unless-stopped
+
+volumes:
+  calendai-postgres-data:
