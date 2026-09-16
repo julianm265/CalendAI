@@ -35,6 +35,10 @@ public class AutenticacionService
             : null;
     }
 
+    public Equipo? ObtenerEquipoDelColaborador(Colaborador colaborador) =>
+        _equipoRepository.ObtenerTodos()
+            .FirstOrDefault(equipo => equipo.BuscarColaborador(colaborador.Id) is not null);
+
     /// <summary>Registra una cuenta que todavía no pertenece a ningún equipo.</summary>
     public Colaborador RegistrarUsuario(string usuario, string contraseña)
     {

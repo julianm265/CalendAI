@@ -17,7 +17,6 @@
       "Microsoft.EntityFrameworkCore/8.0.20": {
         "dependencies": {
           "Microsoft.EntityFrameworkCore.Abstractions": "8.0.20",
-          "Microsoft.EntityFrameworkCore.Analyzers": "8.0.20",
           "Microsoft.Extensions.Caching.Memory": "8.0.1",
           "Microsoft.Extensions.Logging": "8.0.1"
         },
@@ -36,7 +35,6 @@
           }
         }
       },
-      "Microsoft.EntityFrameworkCore.Analyzers/8.0.20": {},
       "Microsoft.EntityFrameworkCore.Relational/8.0.8": {
         "dependencies": {
           "Microsoft.EntityFrameworkCore": "8.0.20",
@@ -181,7 +179,7 @@
         },
         "runtime": {
           "CalendarioBackend.Core.dll": {
-            "assemblyVersion": "1.0.0",
+            "assemblyVersion": "1.0.0.0",
             "fileVersion": "1.0.0.0"
           }
         }
@@ -207,13 +205,6 @@
       "sha512": "sha512-XPyMIlGNj1RJatIuNPs5sT7MVLOd5SURPQ4os1TH72Mi6rJDMQrT0WHWGpAZOcNapwW4gpmco6adGX3iNqv6mQ==",
       "path": "microsoft.entityframeworkcore.abstractions/8.0.20",
       "hashPath": "microsoft.entityframeworkcore.abstractions.8.0.20.nupkg.sha512"
-    },
-    "Microsoft.EntityFrameworkCore.Analyzers/8.0.20": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-U8C8YToCXkaDczeohD7xJKhqKZ9cg0pRsL+cz6zhQr7Y0UQ7eRXhTBy5zIi9YSo82dzN1vawkn6iN9/4k0Zduw==",
-      "path": "microsoft.entityframeworkcore.analyzers/8.0.20",
-      "hashPath": "microsoft.entityframeworkcore.analyzers.8.0.20.nupkg.sha512"
     },
     "Microsoft.EntityFrameworkCore.Relational/8.0.8": {
       "type": "package",

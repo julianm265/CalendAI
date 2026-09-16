@@ -15,12 +15,16 @@ public class AutenticacionController : ControllerBase
     }
 
     [HttpPost("login")]
-    public ActionResult<ColaboradorResumen> IniciarSesion(LoginRequest request)
+    public ActionResult<LoginResponse> IniciarSesion(LoginRequest request)
     {
         var colaborador = _autenticacionService.Autenticar(request.Usuario, request.Contraseña);
         return colaborador is null
             ? Unauthorized()
-            : Ok(new ColaboradorResumen(colaborador.Id, colaborador.Usuario));
+            : Ok(new LoginResponse(
+                new ColaboradorResumen(colaborador.Id, colaborador.Usuario),
+                _autenticacionService.ObtenerEquipoDelColaborador(colaborador) is { } equipo
+                    ? new EquipoLoginResumen(equipo.Id, equipo.NombreEquipo, equipo.LColaboradores.Count)
+                    : null));
     }
 
     [HttpPost("registro")]
@@ -44,3 +48,5 @@ public class AutenticacionController : ControllerBase
 
 public sealed record LoginRequest(string Usuario, string Contraseña);
 public sealed record RegistroRequest(string Usuario, string Contraseña);
+public sealed record LoginResponse(ColaboradorResumen Colaborador, EquipoLoginResumen? Equipo);
+public sealed record EquipoLoginResumen(Guid Id, string Nombre, int Colaboradores);

@@ -32,6 +32,7 @@ public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRe
     public Equipo Agregar(Equipo equipo)
     {
         db.Equipos.Add(new EquipoRow { Id = equipo.Id, Nombre = equipo.NombreEquipo });
+        db.Calendarios.Add(new CalendarioRow { Id = equipo.Calendario.Id, EquipoId = equipo.Id });
         db.SaveChanges();
         return equipo;
     }
