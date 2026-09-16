@@ -19,7 +19,9 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddDbContext<CalendarioDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Calendario")));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("Calendai")
+        ?? builder.Configuration.GetConnectionString("Calendario")));
 builder.Services.AddScoped<IEquipoRepository, PostgresEquipoRepository>();
 builder.Services.AddScoped<IColaboradorRepository, PostgresColaboradorRepository>();
 builder.Services.AddScoped<EquipoService>();
@@ -32,6 +34,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<CalendarioDbContext>();
     db.Database.EnsureCreated();
+    db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS colaboradores ALTER COLUMN equipo_id DROP NOT NULL");
 }
 
 app.UseRouting();

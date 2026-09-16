@@ -141,18 +141,14 @@ async function manejarSubmitLogin(event) {
     setColaborador(colaborador);
     qs('#form-login').reset();
     toast(`Bienvenido, ${colaborador.usuario}.`, 'success');
+    const equipoRespuesta = respuesta?.equipo ?? respuesta?.Equipo ?? null;
+    setEquipoActivo(equipoRespuesta ? normalizarEquipo(equipoRespuesta) : null);
 
-    // Abrir directamente el calendario usando el equipo guardado o el primero disponible.
-    if (state.equipoActivo) {
+    // El backend decide si el usuario tiene un equipo asociado.
+    if (equipoRespuesta) {
       await irACalendario(state.equipoActivo);
     } else {
-      const equiposRespuesta = await api.listarEquipos();
-      const equipos = (Array.isArray(equiposRespuesta) ? equiposRespuesta : []).map(normalizarEquipo);
-      if (equipos.length > 0) {
-        await irACalendario(equipos[0]);
-      } else {
-        irAEquipos();
-      }
+      irAEquipos();
     }
   } catch (error) {
     qs('#login-password').value = '';
