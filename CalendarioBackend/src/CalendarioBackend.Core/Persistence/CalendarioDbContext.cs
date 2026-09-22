@@ -16,6 +16,7 @@ public sealed class CalendarioDbContext(DbContextOptions<CalendarioDbContext> op
         modelBuilder.Entity<EquipoRow>().HasKey(row => row.Id);
         modelBuilder.Entity<EquipoRow>().Property(row => row.Id).HasColumnName("id");
         modelBuilder.Entity<EquipoRow>().Property(row => row.Nombre).HasColumnName("nombre");
+        modelBuilder.Entity<EquipoRow>().Property(row => row.EsPersonal).HasColumnName("es_personal");
         modelBuilder.Entity<EquipoRow>().HasIndex(row => row.Nombre).IsUnique();
         modelBuilder.Entity<CalendarioRow>().ToTable("calendarios");
         modelBuilder.Entity<CalendarioRow>().HasKey(row => row.Id);
@@ -50,6 +51,7 @@ public sealed class EquipoRow
 {
     public Guid Id { get; set; }
     public string Nombre { get; set; } = "";
+    public bool EsPersonal { get; set; }
 }
 
 public sealed class CalendarioRow

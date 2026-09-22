@@ -15,4 +15,5 @@ public interface IEquipoRepository
     Equipo? ObtenerPorNombre(string nombre);
     IReadOnlyList<Equipo> ObtenerTodos();
     bool Eliminar(Guid id);
+    Equipo CrearCalendarioPersonal(Colaborador colaborador);
 }

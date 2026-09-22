@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS equipos (
     id uuid PRIMARY KEY,
     nombre varchar(120) NOT NULL UNIQUE,
+    es_personal boolean NOT NULL DEFAULT false,
     creado_en timestamptz NOT NULL DEFAULT now()
 );
 
@@ -34,3 +35,5 @@ CREATE INDEX IF NOT EXISTS ix_colaboradores_equipo_id ON colaboradores(equipo_id
 CREATE INDEX IF NOT EXISTS ix_eventos_equipo_fecha ON eventos(equipo_id, fecha);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_colaboradores_equipo_usuario_ci
     ON colaboradores (equipo_id, lower(usuario));
+CREATE UNIQUE INDEX IF NOT EXISTS uq_equipo_personal_por_usuario
+    ON equipos (nombre) WHERE es_personal;

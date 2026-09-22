@@ -30,4 +30,12 @@ public class InMemoryEquipoRepository : IEquipoRepository
     public IReadOnlyList<Equipo> ObtenerTodos() => _equipos.Values.ToList().AsReadOnly();
 
     public bool Eliminar(Guid id) => _equipos.TryRemove(id, out _);
+
+    public Equipo CrearCalendarioPersonal(Colaborador colaborador)
+    {
+        var equipo = new Equipo($"Calendario de {colaborador.Usuario}", true);
+        equipo.AgregarColaborador(colaborador);
+        Agregar(equipo);
+        return equipo;
+    }
 }

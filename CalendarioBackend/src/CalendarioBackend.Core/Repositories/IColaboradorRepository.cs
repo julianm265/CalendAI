@@ -7,4 +7,5 @@ public interface IColaboradorRepository
     Colaborador? ObtenerPorUsuario(string usuario);
     bool ExistePorUsuario(string usuario);
     void Agregar(Colaborador colaborador, Guid? equipoId);
+    void AsignarAEquipo(Guid colaboradorId, Guid equipoId);
 }

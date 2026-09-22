@@ -34,6 +34,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<CalendarioDbContext>();
     db.Database.EnsureCreated();
+    db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS equipos ADD COLUMN IF NOT EXISTS es_personal boolean NOT NULL DEFAULT false");
     db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS colaboradores ALTER COLUMN equipo_id DROP NOT NULL");
 }
 

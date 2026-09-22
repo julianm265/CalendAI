@@ -10,11 +10,12 @@ public class Equipo
     public Guid Id { get; }
     public string NombreEquipo { get; set; }
     public Calendario Calendario { get; }
+    public bool EsPersonal { get; }
 
     private readonly List<Colaborador> _colaboradores = new();
     public IReadOnlyList<Colaborador> LColaboradores => _colaboradores.AsReadOnly();
 
-    public Equipo(string nombreEquipo)
+    public Equipo(string nombreEquipo, bool esPersonal = false)
     {
         if (string.IsNullOrWhiteSpace(nombreEquipo))
             throw new ArgumentException("El nombre del equipo no puede estar vacío.", nameof(nombreEquipo));
@@ -22,13 +23,15 @@ public class Equipo
         Id = Guid.NewGuid();
         NombreEquipo = nombreEquipo;
         Calendario = new Calendario();
+        EsPersonal = esPersonal;
     }
 
-    internal Equipo(Guid id, string nombreEquipo, Calendario calendario)
+    internal Equipo(Guid id, string nombreEquipo, Calendario calendario, bool esPersonal = false)
     {
         Id = id;
         NombreEquipo = nombreEquipo;
         Calendario = calendario;
+        EsPersonal = esPersonal;
     }
 
     public void AgregarColaborador(Colaborador colaborador)

@@ -3,208 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CalendarioBackend · Agenda de equipo</title>
+<title>CalendAI · Iniciar sesión</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=2">
+<link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
-<a class="skip-link" href="#main">Saltar al contenido</a>
 <div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
-
-<!-- ============================== LOGIN ============================== -->
 <section id="screen-login" class="screen screen-login">
   <div class="bg-shape shape-1"></div>
   <div class="bg-shape shape-2"></div>
-  
   <div class="card">
     <div class="logo"><div class="logo-icon"></div> CalendAI</div>
-    <!-- Agregamos IDs aquí para que JS pueda cambiarles el texto -->
     <h1 id="auth-title">Bienvenido de vuelta</h1>
     <p class="subtitle" id="auth-subtitle">Ingresa a tu cuenta para continuar</p>
-    
     <form id="form-login" class="stack-form" novalidate>
       <div class="field">
         <label for="login-usuario">Usuario</label>
-        <div class="input-group">
-          <span class="icon">👤</span>
-          <input id="login-usuario" name="usuario" type="text" placeholder="tu.usuario" autocomplete="username" required>
-        </div>
+        <div class="input-group"><span class="icon">👤</span><input id="login-usuario" name="usuario" type="text" placeholder="tu.usuario" autocomplete="username" required></div>
         <p class="field-error" id="login-usuario-error" role="alert"></p>
       </div>
-
       <div class="field">
         <label for="login-password">Contraseña</label>
-        <div class="input-group">
-          <span class="icon">🔒</span>
-          <input id="login-password" name="contraseña" type="password" placeholder="••••••••••••" autocomplete="current-password" required>
-        </div>
+        <div class="input-group"><span class="icon">🔒</span><input id="login-password" name="contraseña" type="password" placeholder="••••••••••••" autocomplete="current-password" required></div>
         <p class="field-error" id="login-password-error" role="alert"></p>
       </div>
-
       <p class="form-error" id="login-form-error" role="alert"></p>
       <button type="submit" class="btn-primary" id="login-submit">Iniciar sesión</button>
     </form>
-
-    <div class="footer">
-      <span id="auth-switch-text">¿No tienes usuario todavía?</span> 
-      <button type="button" class="link-btn" id="toggle-auth-mode" style="background:none; border:none; color:#2f6fdb; font-weight:500; cursor:pointer; font-size:inherit;">Regístrate</button>
-    </div>
+    <div class="footer"><span id="auth-switch-text">¿No tienes usuario todavía?</span> <button type="button" class="link-btn" id="toggle-auth-mode">Regístrate</button></div>
   </div>
 </section>
-
-<!-- ========================= APP (equipos / calendario) ========================= -->
-<div id="screen-app" class="screen screen-app" hidden>
-  <header class="topbar">
-    <div class="topbar-brand">
-      <span class="topbar-brand-mark">CalendarioBackend</span>
-    </div>
-    <nav class="topbar-actions" id="topbar-actions" aria-label="Acciones de cuenta"></nav>
-  </header>
-
-  <main id="main">
-    <!-- ---------------- VISTA: EQUIPOS ---------------- -->
-    <section id="view-teams" class="view">
-      <div class="view-header">
-        <h1>Equipos</h1>
-        <p class="view-subtitle">Elige un equipo para ver su calendario, o crea uno nuevo.</p>
-      </div>
-
-      <form id="form-crear-equipo" class="inline-form" novalidate>
-        <div class="field field-grow">
-          <label for="nuevo-equipo-nombre">Nombre del nuevo equipo</label>
-          <input id="nuevo-equipo-nombre" type="text" required minlength="2" placeholder="p. ej. Equipo de Marketing">
-          <p class="field-error" id="nuevo-equipo-nombre-error" role="alert"></p>
-        </div>
-        <button type="submit" class="btn btn-primary" id="crear-equipo-submit">Crear equipo</button>
-      </form>
-
-      <div id="teams-status" class="status-block" hidden></div>
-      <ul id="teams-list" class="ledger-list" aria-label="Equipos disponibles"></ul>
-    </section>
-
-    <!-- ---------------- VISTA: CALENDARIO ---------------- -->
-    <section id="view-calendar" class="view" hidden>
-      <div class="calendar-toolbar">
-        <div class="month-nav">
-          <button type="button" class="icon-btn" id="prev-month" aria-label="Mes anterior">‹</button>
-          <h1 id="month-label" class="month-label" aria-live="polite"></h1>
-          <button type="button" class="icon-btn" id="next-month" aria-label="Mes siguiente">›</button>
-        </div>
-        <button type="button" class="btn btn-primary" id="open-new-event">+ Nuevo evento</button>
-      </div>
-
-      <div id="calendar-status" class="status-block" hidden></div>
-
-      <div class="calendar-layout">
-        <div class="calendar-grid-wrap">
-          <div class="weekday-row">
-            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
-          </div>
-          <div id="calendar-grid" class="calendar-grid" role="grid" aria-label="Días del mes"></div>
-        </div>
-
-        <aside id="day-panel" class="day-panel" aria-live="polite">
-          <h2 id="day-panel-title">Selecciona un día</h2>
-          <div id="day-panel-status" class="status-block" hidden></div>
-          <ul id="day-events-list" class="events-list"></ul>
-          <button type="button" class="btn btn-secondary" id="open-new-event-day" hidden>+ Agregar evento este día</button>
-        </aside>
-      </div>
-    </section>
-  </main>
-</div>
-
-<!-- ========================= DRAWER: nuevo evento ========================= -->
-<div class="drawer-backdrop" id="event-drawer-backdrop" hidden></div>
-<aside class="drawer" id="event-drawer" role="dialog" aria-modal="true" aria-labelledby="event-drawer-title" hidden>
-  <div class="drawer-header">
-    <h2 id="event-drawer-title">Nuevo evento</h2>
-    <button type="button" class="icon-btn" id="close-event-drawer" aria-label="Cerrar">×</button>
-  </div>
-  <form id="form-evento" class="drawer-form" novalidate>
-    <div class="field">
-      <label for="evento-fecha">Fecha</label>
-      <input id="evento-fecha" type="date" required>
-      <p class="field-error" id="evento-fecha-error" role="alert"></p>
-    </div>
-    <div class="field">
-      <label for="evento-nombre">Nombre del evento</label>
-      <input id="evento-nombre" type="text" required maxlength="120">
-      <p class="field-error" id="evento-nombre-error" role="alert"></p>
-    </div>
-    <div class="field-row">
-      <div class="field">
-        <label for="evento-hora">Hora</label>
-        <input id="evento-hora" type="time" required>
-        <p class="field-error" id="evento-hora-error" role="alert"></p>
-      </div>
-      <div class="field">
-        <label for="evento-lugar">Lugar</label>
-        <input id="evento-lugar" type="text" required maxlength="120">
-        <p class="field-error" id="evento-lugar-error" role="alert"></p>
-      </div>
-    </div>
-    <div class="field">
-      <label for="evento-descripcion">Descripción <span class="optional">(opcional)</span></label>
-      <textarea id="evento-descripcion" rows="3" maxlength="500"></textarea>
-    </div>
-    <div class="field">
-      <label for="evento-organizador">Organizador <span class="optional">(opcional)</span></label>
-      <select id="evento-organizador">
-        <option value="">Sin asignar</option>
-      </select>
-    </div>
-    <p class="form-error" id="evento-form-error" role="alert"></p>
-    <div class="drawer-actions">
-      <button type="button" class="btn btn-ghost" id="cancel-event">Cancelar</button>
-      <button type="submit" class="btn btn-primary" id="submit-event">Guardar evento</button>
-    </div>
-  </form>
-</aside>
-
-<!-- ========================= DRAWER: colaboradores ========================= -->
-<div class="drawer-backdrop" id="collab-drawer-backdrop" hidden></div>
-<aside class="drawer" id="collab-drawer" role="dialog" aria-modal="true" aria-labelledby="collab-drawer-title" hidden>
-  <div class="drawer-header">
-    <h2 id="collab-drawer-title">Colaboradores</h2>
-    <button type="button" class="icon-btn" id="close-collab-drawer" aria-label="Cerrar">×</button>
-  </div>
-  <div class="drawer-body">
-    <div id="collab-status" class="status-block" hidden></div>
-    <ul id="collab-list" class="ledger-list ledger-list-compact" aria-label="Colaboradores del equipo"></ul>
-
-    <form id="form-colaborador" class="drawer-form" novalidate>
-      <h3>Agregar colaborador</h3>
-      <div class="field">
-        <label for="collab-usuario">Usuario</label>
-        <input id="collab-usuario" type="text" required autocomplete="off">
-        <p class="field-error" id="collab-usuario-error" role="alert"></p>
-      </div>
-      <div class="field">
-        <label for="collab-password">Contraseña</label>
-        <input id="collab-password" type="password" required minlength="6" autocomplete="new-password">
-        <p class="field-error" id="collab-password-error" role="alert"></p>
-      </div>
-      <p class="form-error" id="collab-form-error" role="alert"></p>
-      <button type="submit" class="btn btn-primary">Agregar colaborador</button>
-    </form>
-  </div>
-</aside>
-
-<!-- ========================= DIÁLOGO DE CONFIRMACIÓN ========================= -->
-<div class="drawer-backdrop" id="confirm-backdrop" hidden></div>
-<div class="confirm-dialog" id="confirm-dialog" role="alertdialog" aria-modal="true"
-     aria-labelledby="confirm-title" aria-describedby="confirm-message" hidden>
-  <h2 id="confirm-title">¿Eliminar evento?</h2>
-  <p id="confirm-message"></p>
-  <div class="confirm-actions">
-    <button type="button" class="btn btn-ghost" id="confirm-cancel">Cancelar</button>
-    <button type="button" class="btn btn-danger" id="confirm-accept">Eliminar</button>
-  </div>
-</div>
-
 <script type="module" src="app.js"></script>
 </body>
 </html>

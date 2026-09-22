@@ -21,6 +21,7 @@ export function normalizarEquipo(raw) {
   return {
     id: raw.id ?? raw.Id ?? null,
     nombreEquipo: raw.nombreEquipo ?? raw.NombreEquipo ?? raw.nombre ?? raw.Nombre ?? '',
+    esPersonal: raw.esPersonal ?? raw.EsPersonal ?? false,
     colaboradores: Array.isArray(colaboradoresRaw) ? colaboradoresRaw.map(normalizarColaborador) : [],
   };
 }

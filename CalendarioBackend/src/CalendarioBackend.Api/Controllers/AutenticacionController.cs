@@ -22,8 +22,8 @@ public class AutenticacionController : ControllerBase
             ? Unauthorized()
             : Ok(new LoginResponse(
                 new ColaboradorResumen(colaborador.Id, colaborador.Usuario),
-                _autenticacionService.ObtenerEquipoDelColaborador(colaborador) is { } equipo
-                    ? new EquipoLoginResumen(equipo.Id, equipo.NombreEquipo, equipo.LColaboradores.Count)
+                _autenticacionService.ObtenerOCrearCalendarioPersonal(colaborador) is { } equipo
+                    ? new EquipoLoginResumen(equipo.Id, equipo.NombreEquipo, equipo.LColaboradores.Count, equipo.EsPersonal)
                     : null));
     }
 
@@ -49,4 +49,4 @@ public class AutenticacionController : ControllerBase
 public sealed record LoginRequest(string Usuario, string Contraseña);
 public sealed record RegistroRequest(string Usuario, string Contraseña);
 public sealed record LoginResponse(ColaboradorResumen Colaborador, EquipoLoginResumen? Equipo);
-public sealed record EquipoLoginResumen(Guid Id, string Nombre, int Colaboradores);
+public sealed record EquipoLoginResumen(Guid Id, string Nombre, int Colaboradores, bool EsPersonal);
