@@ -43,6 +43,37 @@ También puedes levantar frontend y backend juntos desde la raíz `calendAI` con
 `docker compose up --build`; en ese caso el frontend queda en
 `http://localhost:5500` y la API en `http://localhost:5080`.
 
+### Editar el frontend con Docker
+
+El servicio `frontend` monta `./CalendarioFrontend` como volumen de solo
+lectura dentro de Nginx. Por eso, durante el desarrollo, puedes editar
+directamente estos archivos en el host y refrescar el navegador:
+
+- `index.html`: estructura de login, equipos y la vista independiente del
+  calendario.
+- `styles.css`: tokens de color, tipografía, layout y responsive.
+- `app.js`, `calendar.js`, `state.js` y `ui.js`: comportamiento.
+
+No es necesario ejecutar `docker compose build` después de esos cambios. Solo
+hay que reconstruir si cambian el `Dockerfile` o `nginx.conf`:
+
+```bash
+docker compose up -d
+docker compose build frontend
+docker compose up -d frontend
+```
+
+Después de iniciar sesión, la aplicación navega a
+`http://localhost:5500/calendar.html`. Esta es una página HTML independiente:
+no comparte el documento ni la composición visual del login. Si se abre
+directamente sin una sesión y calendario guardados, vuelve a
+`http://localhost:5500/index.html`.
+
+Durante desarrollo, Nginx sirve los HTML con `Cache-Control: no-store`, por lo
+que los cambios de separación se ven al refrescar sin conservar la versión
+anterior en el navegador. La URL antigua `/#/calendar` también se redirige a
+`/calendar.html` cuando existe una sesión válida.
+
 En el despliegue con Docker, `api.js` usa la ruta relativa `/api`: Nginx la
 redirige internamente al contenedor backend y no hay un problema de CORS. Si
 ejecutas el frontend manualmente con Python o Live Server, cambia la constante
@@ -110,14 +141,14 @@ mostrar datos simulados.
 ## Flujo de la aplicación
 
 1. **Inicio de sesión y registro** (`POST /api/autenticacion/login` y
-  `POST /api/autenticacion/registro`). Una cuenta se puede crear e iniciar
-  sesión sin pertenecer a un equipo. Después de iniciar sesión, el frontend
-  permite elegir o crear un equipo si se desea usar un calendario compartido.
+  `POST /api/autenticacion/registro`). Cada cuenta recibe automáticamente un
+  calendario personal al iniciar sesión por primera vez, aunque todavía no
+  pertenezca a un equipo colaborativo. El calendario personal se abre por
+  defecto en `#/calendar`.
 2. **Equipos**: listar (`GET /api/equipos`), crear (`POST /api/equipos`) y
-   elegir el equipo activo. Como aún no hay ningún colaborador la primera vez
-   que se crea un equipo, se puede llegar a esta pantalla también **sin haber
-   iniciado sesión** (enlace "Explora los equipos" en el login), para poder
-   registrar el primer colaborador desde el panel de "Colaboradores".
+   elegir el equipo activo. Estos calendarios son colaborativos; el personal y
+   los colaborativos usan la misma vista y las mismas operaciones de eventos.
+   El encabezado indica si el calendario actual es personal o colaborativo.
 3. **Calendario mensual**: navegación entre meses, cuadrícula con indicador de
    cuántos eventos tiene cada día (usando `GET /eventos/mes`), panel lateral
    con los eventos del día seleccionado (usando `GET /eventos?fecha=`),

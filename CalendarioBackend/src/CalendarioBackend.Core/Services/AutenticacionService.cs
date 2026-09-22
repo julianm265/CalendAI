@@ -39,6 +39,16 @@ public class AutenticacionService
         _equipoRepository.ObtenerTodos()
             .FirstOrDefault(equipo => equipo.BuscarColaborador(colaborador.Id) is not null);
 
+    public Equipo ObtenerOCrearCalendarioPersonal(Colaborador colaborador)
+    {
+        var equipo = ObtenerEquipoDelColaborador(colaborador);
+        if (equipo is not null) return equipo;
+
+        var calendarioPersonal = _equipoRepository.CrearCalendarioPersonal(colaborador);
+        _colaboradorRepository?.AsignarAEquipo(colaborador.Id, calendarioPersonal.Id);
+        return calendarioPersonal;
+    }
+
     /// <summary>Registra una cuenta que todavía no pertenece a ningún equipo.</summary>
     public Colaborador RegistrarUsuario(string usuario, string contraseña)
     {

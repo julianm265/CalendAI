@@ -25,13 +25,21 @@ public sealed class PostgresColaboradorRepository(CalendarioDbContext db) : ICol
         db.SaveChanges();
     }
 
+    public void AsignarAEquipo(Guid colaboradorId, Guid equipoId)
+    {
+        var row = db.Colaboradores.FirstOrDefault(item => item.Id == colaboradorId)
+            ?? throw new KeyNotFoundException("No se encontró el colaborador.");
+        row.EquipoId = equipoId;
+        db.SaveChanges();
+    }
+
 }
 
 public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRepository
 {
     public Equipo Agregar(Equipo equipo)
     {
-        db.Equipos.Add(new EquipoRow { Id = equipo.Id, Nombre = equipo.NombreEquipo });
+        db.Equipos.Add(new EquipoRow { Id = equipo.Id, Nombre = equipo.NombreEquipo, EsPersonal = equipo.EsPersonal });
         db.Calendarios.Add(new CalendarioRow { Id = equipo.Calendario.Id, EquipoId = equipo.Id });
         db.SaveChanges();
         return equipo;
@@ -39,7 +47,7 @@ public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRe
 
     public void Guardar(Equipo equipo)
     {
-        db.Equipos.Update(new EquipoRow { Id = equipo.Id, Nombre = equipo.NombreEquipo });
+        db.Equipos.Update(new EquipoRow { Id = equipo.Id, Nombre = equipo.NombreEquipo, EsPersonal = equipo.EsPersonal });
         db.Colaboradores.RemoveRange(db.Colaboradores.Where(row => row.EquipoId == equipo.Id));
         db.Eventos.RemoveRange(db.Eventos.Where(row => row.EquipoId == equipo.Id));
         foreach (var colaborador in equipo.LColaboradores)
@@ -58,10 +66,20 @@ public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRe
     public IReadOnlyList<Equipo> ObtenerTodos() => db.Equipos.AsNoTracking().ToList().Select(Cargar).Where(equipo => equipo is not null).Cast<Equipo>().ToList();
     public bool Eliminar(Guid id) { var equipo = db.Equipos.Find(id); if (equipo is null) return false; db.Equipos.Remove(equipo); db.SaveChanges(); return true; }
 
+    public Equipo CrearCalendarioPersonal(Colaborador colaborador)
+    {
+        var equipo = new Equipo($"Calendario de {colaborador.Usuario}", true);
+        db.Equipos.Add(new EquipoRow { Id = equipo.Id, Nombre = equipo.NombreEquipo, EsPersonal = true });
+        db.Calendarios.Add(new CalendarioRow { Id = equipo.Calendario.Id, EquipoId = equipo.Id });
+        equipo.AgregarColaborador(colaborador);
+        db.SaveChanges();
+        return equipo;
+    }
+
     private Equipo? Cargar(EquipoRow? row)
     {
         if (row is null) return null;
-        var equipo = new Equipo(row.Id, row.Nombre, new Calendario());
+        var equipo = new Equipo(row.Id, row.Nombre, new Calendario(), row.EsPersonal);
         foreach (var colaborador in db.Colaboradores.AsNoTracking().Where(item => item.EquipoId == row.Id))
             equipo.AgregarColaborador(new Colaborador(colaborador.Id, colaborador.Usuario, colaborador.ContraseñaHash));
         foreach (var evento in db.Eventos.AsNoTracking().Where(item => item.EquipoId == row.Id))

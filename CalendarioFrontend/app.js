@@ -18,20 +18,33 @@ import {
 
 /* ============================== Navegación entre pantallas ============================== */
 
-function mostrarLogin() {
+function cambiarRuta(ruta) {
+  const hash = `#/${ruta}`;
+  if (window.location.hash !== hash) {
+    window.history.pushState(null, '', hash);
+  }
+}
+
+function mostrarLogin({ actualizarUrl = true } = {}) {
+  if (!qs('#screen-login')) {
+    window.location.assign('/index.html');
+    return;
+  }
   qs('#screen-login').hidden = false;
-  qs('#screen-app').hidden = true;
+  if (qs('#screen-app')) qs('#screen-app').hidden = true;
+  if (actualizarUrl) cambiarRuta('login');
 }
 
 function mostrarApp(vista) {
-  qs('#screen-login').hidden = true;
-  qs('#screen-app').hidden = false;
+  if (qs('#screen-login')) qs('#screen-login').hidden = true;
+  if (qs('#screen-app')) qs('#screen-app').hidden = false;
   mostrarVista(vista);
+  cambiarRuta(vista);
 }
 
 function mostrarVista(vista) {
-  qs('#view-teams').hidden = vista !== 'teams';
-  qs('#view-calendar').hidden = vista !== 'calendar';
+  if (qs('#view-teams')) qs('#view-teams').hidden = vista !== 'teams';
+  if (qs('#view-calendar')) qs('#view-calendar').hidden = vista !== 'calendar';
   renderTopbar(vista);
 }
 
@@ -40,9 +53,14 @@ function renderTopbar(vista) {
   contenedor.innerHTML = '';
 
   if (vista === 'calendar' && state.equipoActivo) {
-    contenedor.appendChild(ce('span', { class: 'topbar-chip' }, `Equipo: ${state.equipoActivo.nombreEquipo}`));
+    const tipo = state.equipoActivo.esPersonal ? 'Calendario personal' : 'Calendario colaborativo';
+    contenedor.appendChild(ce('span', { class: 'topbar-chip' }, `${tipo}: ${state.equipoActivo.nombreEquipo}`));
     contenedor.appendChild(
-      ce('button', { class: 'btn btn-secondary', type: 'button', onClick: irAEquipos }, 'Cambiar equipo'),
+      ce('button', {
+        class: 'btn btn-secondary',
+        type: 'button',
+        onClick: () => window.location.assign('/index.html'),
+      }, 'Cambiar calendario'),
     );
     contenedor.appendChild(
       ce('button', { class: 'btn btn-secondary', type: 'button', onClick: abrirColaboradores }, 'Colaboradores'),
@@ -144,12 +162,8 @@ async function manejarSubmitLogin(event) {
     const equipoRespuesta = respuesta?.equipo ?? respuesta?.Equipo ?? null;
     setEquipoActivo(equipoRespuesta ? normalizarEquipo(equipoRespuesta) : null);
 
-    // El backend decide si el usuario tiene un equipo asociado.
-    if (equipoRespuesta) {
-      await irACalendario(state.equipoActivo);
-    } else {
-      irAEquipos();
-    }
+    // El calendario se sirve como una página HTML independiente del login.
+    window.location.assign('/calendar.html');
   } catch (error) {
     qs('#login-password').value = '';
     setFormError('login-form-error', mensajeDeError(error));
@@ -270,7 +284,8 @@ async function refrescarDetalleEquipo() {
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       toast('El equipo activo ya no existe. Elige otro equipo.', 'error');
-      irAEquipos();
+      setEquipoActivo(null);
+      window.location.replace('/index.html');
       return;
     }
     toast(mensajeDeError(error), 'error');
@@ -623,35 +638,58 @@ function mensajeDeError(error) {
 /* ===================================== Arranque ===================================== */
 
 function inicializar() {
-  qs('#toggle-auth-mode').addEventListener('click', cambiarModoAuth);
+  const esPaginaCalendario = Boolean(qs('#view-calendar') && !qs('#form-login'));
 
-  qs('#form-login').addEventListener('submit', manejarSubmitLogin);
-  // qs('#go-to-teams').addEventListener('click', irAEquipos);    prueba para ir a equipos sin login
+  if (qs('#toggle-auth-mode')) qs('#toggle-auth-mode').addEventListener('click', cambiarModoAuth);
+  if (qs('#form-login')) qs('#form-login').addEventListener('submit', manejarSubmitLogin);
+  if (qs('#form-crear-equipo')) qs('#form-crear-equipo').addEventListener('submit', manejarSubmitCrearEquipo);
+  if (qs('#prev-month')) qs('#prev-month').addEventListener('click', manejarMesAnterior);
+  if (qs('#next-month')) qs('#next-month').addEventListener('click', manejarMesSiguiente);
+  if (qs('#open-new-event')) qs('#open-new-event').addEventListener('click', abrirDrawerEvento);
+  if (qs('#open-new-event-day')) qs('#open-new-event-day').addEventListener('click', abrirDrawerEvento);
+  if (qs('#close-event-drawer')) qs('#close-event-drawer').addEventListener('click', cerrarDrawerEvento);
+  if (qs('#cancel-event')) qs('#cancel-event').addEventListener('click', cerrarDrawerEvento);
+  if (qs('#event-drawer-backdrop')) qs('#event-drawer-backdrop').addEventListener('click', cerrarDrawerEvento);
+  if (qs('#form-evento')) qs('#form-evento').addEventListener('submit', manejarSubmitEvento);
+  if (qs('#close-collab-drawer')) qs('#close-collab-drawer').addEventListener('click', cerrarColaboradores);
+  if (qs('#collab-drawer-backdrop')) qs('#collab-drawer-backdrop').addEventListener('click', cerrarColaboradores);
+  if (qs('#form-colaborador')) qs('#form-colaborador').addEventListener('submit', manejarSubmitColaborador);
 
-  qs('#form-crear-equipo').addEventListener('submit', manejarSubmitCrearEquipo);
-
-  qs('#prev-month').addEventListener('click', manejarMesAnterior);
-  qs('#next-month').addEventListener('click', manejarMesSiguiente);
-
-  qs('#open-new-event').addEventListener('click', abrirDrawerEvento);
-  qs('#open-new-event-day').addEventListener('click', abrirDrawerEvento);
-  qs('#close-event-drawer').addEventListener('click', cerrarDrawerEvento);
-  qs('#cancel-event').addEventListener('click', cerrarDrawerEvento);
-  qs('#event-drawer-backdrop').addEventListener('click', cerrarDrawerEvento);
-  qs('#form-evento').addEventListener('submit', manejarSubmitEvento);
-
-  qs('#close-collab-drawer').addEventListener('click', cerrarColaboradores);
-  qs('#collab-drawer-backdrop').addEventListener('click', cerrarColaboradores);
-  qs('#form-colaborador').addEventListener('submit', manejarSubmitColaborador);
-
-  // Restaurar sesión guardada en este navegador (ver state.js: no hay JWT todavía).
-  if (state.colaborador && state.equipoActivo) {
+  if (esPaginaCalendario) {
+    if (!state.colaborador || !state.equipoActivo) {
+      window.location.replace('/index.html');
+      return;
+    }
     irACalendario(state.equipoActivo);
-  } else if (state.colaborador) {
-    irAEquipos();
-  } else {
-    mostrarLogin();
+    return;
   }
+
+  if (window.location.hash === '#/calendar' && state.colaborador && state.equipoActivo) {
+    window.location.replace('/calendar.html');
+    return;
+  }
+
+  if (state.colaborador && state.equipoActivo) {
+    window.location.replace('/calendar.html');
+  } else {
+    mostrarLogin({ actualizarUrl: false });
+  }
+}
+
+function manejarCambioDeRuta() {
+  const ruta = window.location.hash.replace(/^#\//, '');
+
+  if (ruta === 'calendar' && state.colaborador && state.equipoActivo) {
+    irACalendario(state.equipoActivo);
+    return;
+  }
+
+  if (ruta === 'teams' && state.colaborador) {
+    irAEquipos();
+    return;
+  }
+
+  mostrarLogin({ actualizarUrl: ruta !== 'login' });
 }
 
 inicializar();
