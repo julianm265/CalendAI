@@ -35,9 +35,14 @@ public class AutenticacionService
             : null;
     }
 
-    public Equipo? ObtenerEquipoDelColaborador(Colaborador colaborador) =>
-        _equipoRepository.ObtenerTodos()
-            .FirstOrDefault(equipo => equipo.BuscarColaborador(colaborador.Id) is not null);
+    /// <summary>Equipo con el que arranca la sesión: su calendario personal si lo tiene.</summary>
+    public Equipo? ObtenerEquipoDelColaborador(Colaborador colaborador)
+    {
+        var equipos = _equipoRepository.ObtenerTodos()
+            .Where(equipo => equipo.BuscarColaborador(colaborador.Id) is not null)
+            .ToList();
+        return equipos.FirstOrDefault(equipo => equipo.EsPersonal) ?? equipos.FirstOrDefault();
+    }
 
     public Equipo ObtenerOCrearCalendarioPersonal(Colaborador colaborador)
     {

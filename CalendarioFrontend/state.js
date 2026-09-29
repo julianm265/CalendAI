@@ -1,12 +1,12 @@
 // state.js
-// Estado de la aplicación. La sesión y el equipo activo se guardan únicamente
-// en sessionStorage del navegador: el backend todavía no emite JWT ni recuerda
-// sesiones, así que esto es solo una conveniencia local que desaparece al
-// cerrar la pestaña.
+// Estado de la aplicación. El token de sesión que emite la API, el colaborador
+// y el equipo activo se guardan en sessionStorage del navegador, así que la
+// sesión desaparece al cerrar la pestaña.
 
 const STORAGE_KEYS = {
   colaborador: 'calendarioBackend.colaborador',
   equipoActivo: 'calendarioBackend.equipoActivo',
+  token: 'calendarioBackend.token',
 };
 
 function leerJson(key) {
@@ -32,6 +32,7 @@ function escribirJson(key, value) {
 }
 
 export const state = {
+  token: leerJson(STORAGE_KEYS.token), // token Bearer emitido por la API | null
   colaborador: leerJson(STORAGE_KEYS.colaborador), // { id, usuario } | null
   equipoActivo: leerJson(STORAGE_KEYS.equipoActivo), // { id, nombreEquipo } | null
   equipoActivoDetalle: null, // equipo completo con colaboradores, refrescado al entrar al calendario
@@ -45,12 +46,19 @@ export function setColaborador(colaborador) {
   escribirJson(STORAGE_KEYS.colaborador, colaborador);
 }
 
+export function setToken(token) {
+  state.token = token;
+  escribirJson(STORAGE_KEYS.token, token);
+}
+
 export function setEquipoActivo(equipo) {
   state.equipoActivo = equipo;
   escribirJson(STORAGE_KEYS.equipoActivo, equipo);
 }
 
 export function cerrarSesion() {
+  state.token = null;
+  escribirJson(STORAGE_KEYS.token, null);
   state.colaborador = null;
   state.equipoActivo = null;
   state.equipoActivoDetalle = null;

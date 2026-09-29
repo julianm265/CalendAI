@@ -1,3 +1,4 @@
+using CalendarioBackend.Api.Seguridad;
 using CalendarioBackend.Core.Repositories;
 using CalendarioBackend.Core.Persistence;
 using CalendarioBackend.Core.Services;
@@ -29,6 +30,9 @@ builder.Services.AddScoped<IColaboradorRepository, PostgresColaboradorRepository
 builder.Services.AddScoped<EquipoService>();
 builder.Services.AddScoped<CalendarioService>();
 builder.Services.AddScoped<AutenticacionService>();
+builder.Services.AddSingleton<SesionService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<SesionActual>();
 
 var app = builder.Build();
 
@@ -38,6 +42,19 @@ using (var scope = app.Services.CreateScope())
     db.Database.EnsureCreated();
     db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS equipos ADD COLUMN IF NOT EXISTS es_personal boolean NOT NULL DEFAULT false");
     db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS colaboradores ALTER COLUMN equipo_id DROP NOT NULL");
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS equipo_miembros (
+            equipo_id uuid NOT NULL REFERENCES equipos (id) ON DELETE CASCADE,
+            colaborador_id uuid NOT NULL REFERENCES colaboradores (id) ON DELETE CASCADE,
+            PRIMARY KEY (equipo_id, colaborador_id)
+        )
+        """);
+    // Bases anteriores guardaban la pertenencia en colaboradores.equipo_id.
+    db.Database.ExecuteSqlRaw("""
+        INSERT INTO equipo_miembros (equipo_id, colaborador_id)
+        SELECT equipo_id, id FROM colaboradores WHERE equipo_id IS NOT NULL
+        ON CONFLICT DO NOTHING
+        """);
 }
 
 app.UseRouting();
@@ -49,7 +66,7 @@ app.Use(async (context, next) =>
     if (context.Request.Headers.TryGetValue("Origin", out var origin))
     {
         context.Response.Headers["Access-Control-Allow-Origin"] = origin.ToString();
-        context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type";
+        context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
         context.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,DELETE,OPTIONS";
         context.Response.Headers["Vary"] = "Origin";
     }

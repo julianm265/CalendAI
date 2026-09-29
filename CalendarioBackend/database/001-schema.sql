@@ -17,6 +17,13 @@ CREATE TABLE IF NOT EXISTS colaboradores (
     contrasena_hash varchar(255) NOT NULL
 );
 
+-- Pertenencia de un colaborador a un equipo (puede estar en varios a la vez).
+CREATE TABLE IF NOT EXISTS equipo_miembros (
+    equipo_id uuid NOT NULL REFERENCES equipos(id) ON DELETE CASCADE,
+    colaborador_id uuid NOT NULL REFERENCES colaboradores(id) ON DELETE CASCADE,
+    PRIMARY KEY (equipo_id, colaborador_id)
+);
+
 CREATE TABLE IF NOT EXISTS eventos (
     id uuid PRIMARY KEY,
     equipo_id uuid NOT NULL REFERENCES equipos(id) ON DELETE CASCADE,

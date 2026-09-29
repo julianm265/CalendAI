@@ -1,3 +1,4 @@
+using CalendarioBackend.Api.Seguridad;
 using CalendarioBackend.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,10 +9,17 @@ namespace CalendarioBackend.Api.Controllers;
 public class AutenticacionController : ControllerBase
 {
     private readonly AutenticacionService _autenticacionService;
+    private readonly SesionService _sesionService;
+    private readonly SesionActual _sesionActual;
 
-    public AutenticacionController(AutenticacionService autenticacionService)
+    public AutenticacionController(
+        AutenticacionService autenticacionService,
+        SesionService sesionService,
+        SesionActual sesionActual)
     {
         _autenticacionService = autenticacionService;
+        _sesionService = sesionService;
+        _sesionActual = sesionActual;
     }
 
     [HttpPost("login")]
@@ -24,7 +32,8 @@ public class AutenticacionController : ControllerBase
                 new ColaboradorResumen(colaborador.Id, colaborador.Usuario),
                 _autenticacionService.ObtenerOCrearCalendarioPersonal(colaborador) is { } equipo
                     ? new EquipoLoginResumen(equipo.Id, equipo.NombreEquipo, equipo.LColaboradores.Count, equipo.EsPersonal)
-                    : null));
+                    : null,
+                _sesionService.Crear(colaborador.Id)));
     }
 
     [HttpPost("registro")]
@@ -44,9 +53,17 @@ public class AutenticacionController : ControllerBase
             return Conflict(new { error = exception.Message });
         }
     }
+
+    [HttpPost("logout")]
+    public ActionResult<LogoutResponse> CerrarSesion()
+    {
+        _sesionService.Cerrar(_sesionActual.Token);
+        return Ok(new LogoutResponse(true));
+    }
 }
 
 public sealed record LoginRequest(string Usuario, string Contraseña);
+public sealed record LogoutResponse(bool Cerrada);
 public sealed record RegistroRequest(string Usuario, string Contraseña);
-public sealed record LoginResponse(ColaboradorResumen Colaborador, EquipoLoginResumen? Equipo);
+public sealed record LoginResponse(ColaboradorResumen Colaborador, EquipoLoginResumen? Equipo, string Token);
 public sealed record EquipoLoginResumen(Guid Id, string Nombre, int Colaboradores, bool EsPersonal);

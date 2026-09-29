@@ -6,7 +6,7 @@
 import * as api from './api.js';
 import { ApiError } from './api.js';
 import { normalizarEquipo, normalizarEvento, normalizarEventoDelMes, normalizarColaborador } from './normalize.js';
-import { state, setColaborador, setEquipoActivo, cerrarSesion } from './state.js';
+import { state, setColaborador, setToken, setEquipoActivo, cerrarSesion } from './state.js';
 import {
   construirCuadriculaMes, sumarMeses, formatearFechaLarga, formatearMesAño,
   formatearHoraCorta, normalizarHoraParaApi, fechaHoyIso,
@@ -80,6 +80,8 @@ function renderTopbar(vista) {
 }
 
 function manejarCerrarSesion() {
+  api.cerrarSesionEnApi().catch(() => {}); // el token local se descarta igual
+  api.establecerToken(null);
   cerrarSesion();
   toast('Sesión cerrada.');
   mostrarLogin();
@@ -156,6 +158,10 @@ async function manejarSubmitLogin(event) {
       return;
     }
 
+    const token = respuesta?.token ?? respuesta?.Token ?? null;
+    setToken(token);
+    api.establecerToken(token);
+
     setColaborador(colaborador);
     qs('#form-login').reset();
     toast(`Bienvenido, ${colaborador.usuario}.`, 'success');
@@ -179,6 +185,16 @@ function irAEquipos() {
   cargarEquipos();
 }
 
+/** Si la API rechaza el token (vencido o reiniciada), vuelve al login. */
+function manejarSesionInvalida(error) {
+  if (!(error instanceof ApiError) || error.status !== 401) return false;
+  api.establecerToken(null);
+  cerrarSesion();
+  toast('Tu sesión expiró. Inicia sesión de nuevo.', 'error');
+  window.location.replace('/index.html');
+  return true;
+}
+
 async function cargarEquipos() {
   setStatus('teams-status', { loading: 'Cargando equipos…' });
   qs('#teams-list').innerHTML = '';
@@ -189,6 +205,7 @@ async function cargarEquipos() {
     setStatus('teams-status');
     renderListaEquipos(equipos);
   } catch (error) {
+    if (manejarSesionInvalida(error)) return;
     setStatus('teams-status', { error: mensajeDeError(error) });
   }
 }
@@ -282,6 +299,7 @@ async function refrescarDetalleEquipo() {
     setEquipoActivo(state.equipoActivo);
     renderTopbar('calendar');
   } catch (error) {
+    if (manejarSesionInvalida(error)) return;
     if (error instanceof ApiError && error.status === 404) {
       toast('El equipo activo ya no existe. Elige otro equipo.', 'error');
       setEquipoActivo(null);
@@ -655,8 +673,10 @@ function inicializar() {
   if (qs('#collab-drawer-backdrop')) qs('#collab-drawer-backdrop').addEventListener('click', cerrarColaboradores);
   if (qs('#form-colaborador')) qs('#form-colaborador').addEventListener('submit', manejarSubmitColaborador);
 
+  api.establecerToken(state.token);
+
   if (esPaginaCalendario) {
-    if (!state.colaborador || !state.equipoActivo) {
+    if (!state.token || !state.colaborador || !state.equipoActivo) {
       window.location.replace('/index.html');
       return;
     }

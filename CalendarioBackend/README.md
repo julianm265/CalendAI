@@ -26,9 +26,22 @@ La API expone, entre otras, estas rutas:
 - `POST /api/equipos/{id}/colaboradores`
 - `POST /api/autenticacion/login`
 - `POST /api/autenticacion/registro`
+- `POST /api/autenticacion/logout`
 - `GET /api/equipos/{id}/eventos?fecha=2026-09-03`
 - `POST /api/equipos/{id}/eventos`
 - `DELETE /api/equipos/{id}/eventos/{eventoId}?fecha=2026-09-03`
+
+## Sesiones y permisos
+
+`POST /api/autenticacion/login` devuelve un `token` de sesión. El resto de las rutas de
+equipos y eventos lo exigen en el encabezado `Authorization: Bearer <token>` y solo
+responden si quien pide pertenece al equipo indicado; de lo contrario devuelven `401`
+(sin sesión) o `404` (equipo ajeno, para no revelar su existencia).
+
+Por eso el registro público (`/api/autenticacion/registro`) solo crea una cuenta con su
+calendario personal: sumar a alguien a un equipo colaborativo es una operación de un
+miembro de ese equipo (`POST /api/equipos/{id}/colaboradores`). Los tokens viven en memoria
+del proceso y duran 12 horas, así que un reinicio de la API obliga a iniciar sesión de nuevo.
 
 ## Ejecutar todo con Docker Compose
 

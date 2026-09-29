@@ -1,3 +1,4 @@
+using CalendarioBackend.Api.Seguridad;
 using CalendarioBackend.Core.Models;
 using CalendarioBackend.Core.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -9,15 +10,35 @@ namespace CalendarioBackend.Api.Controllers;
 public class EventosController : ControllerBase
 {
     private readonly CalendarioService _calendarioService;
+    private readonly EquipoService _equipoService;
+    private readonly SesionActual _sesionActual;
 
-    public EventosController(CalendarioService calendarioService)
+    public EventosController(
+        CalendarioService calendarioService,
+        EquipoService equipoService,
+        SesionActual sesionActual)
     {
         _calendarioService = calendarioService;
+        _equipoService = equipoService;
+        _sesionActual = sesionActual;
+    }
+
+    /// <summary>
+    /// Devuelve el error a responder cuando quien pide no inició sesión o no pertenece al
+    /// equipo, o null si está autorizado. Se responde 404 para no revelar equipos ajenos.
+    /// </summary>
+    private ActionResult? VerificarAcceso(Guid equipoId)
+    {
+        if (_sesionActual.ColaboradorId is not Guid colaboradorId)
+            return Unauthorized();
+        return _equipoService.EsMiembro(equipoId, colaboradorId) ? null : NotFound();
     }
 
     [HttpGet]
     public ActionResult<IEnumerable<Evento>> ObtenerDelDia(Guid equipoId, [FromQuery] DateOnly fecha)
     {
+        if (VerificarAcceso(equipoId) is { } error) return error;
+
         try
         {
             return Ok(_calendarioService.ObtenerEventosDelDia(equipoId, fecha));
@@ -34,6 +55,8 @@ public class EventosController : ControllerBase
         [FromQuery] int año,
         [FromQuery] byte mes)
     {
+        if (VerificarAcceso(equipoId) is { } error) return error;
+
         try
         {
             var eventos = _calendarioService.ObtenerEventosDelMes(equipoId, año, mes)
@@ -49,6 +72,8 @@ public class EventosController : ControllerBase
     [HttpPost]
     public ActionResult<Evento> Agregar(Guid equipoId, AgregarEventoRequest request)
     {
+        if (VerificarAcceso(equipoId) is { } error) return error;
+
         try
         {
             var evento = _calendarioService.AgregarEvento(
@@ -79,6 +104,8 @@ public class EventosController : ControllerBase
     [HttpDelete("{eventoId:guid}")]
     public IActionResult Eliminar(Guid equipoId, Guid eventoId, [FromQuery] DateOnly fecha)
     {
+        if (VerificarAcceso(equipoId) is { } error) return error;
+
         try
         {
             return _calendarioService.EliminarEvento(equipoId, fecha, eventoId)
