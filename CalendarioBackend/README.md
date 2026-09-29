@@ -25,6 +25,7 @@ La API expone, entre otras, estas rutas:
 - `GET /api/equipos/{id}`
 - `POST /api/equipos/{id}/colaboradores`
 - `POST /api/autenticacion/login`
+- `POST /api/autenticacion/registro`
 - `GET /api/equipos/{id}/eventos?fecha=2026-09-03`
 - `POST /api/equipos/{id}/eventos`
 - `DELETE /api/equipos/{id}/eventos/{eventoId}?fecha=2026-09-03`
@@ -45,19 +46,19 @@ Para detener los servicios:
 docker compose down
 ```
 
-La aplicación usa PostgreSQL para conservar equipos, colaboradores y eventos.
-El esquema se encuentra en `database/001-schema.sql` y Docker lo ejecuta al crear
-el volumen por primera vez. La implementación de PostgreSQL está en
-`src/CalendarioBackend.Core/Persistence` y `Repositories/PostgresEquipoRepository.cs`.
+La aplicación usa PostgreSQL mediante Entity Framework Core. Docker Compose crea el servicio
+`postgres` y conserva sus datos en el volumen `calendai_postgres_data`; las tablas se crean
+automáticamente al iniciar la API. Las cuentas, equipos y eventos sobreviven a reinicios del
+backend y el login consulta siempre el mismo repositorio persistente de colaboradores.
 
-Para inspeccionar la base de datos:
+La cadena de conexión local está en `appsettings.json` y Docker la sobrescribe mediante
+`ConnectionStrings__Calendai` para usar `Host=postgres`. `docker compose down` conserva la
+base; no uses `docker compose down -v` si necesitas conservar los datos.
 
-```powershell
-docker exec -it calendai-postgres psql -U calendai_user -d calendai
-```
-
-La configuración local usa `localhost`; dentro de Docker, el backend usa `postgres`
-como nombre del host mediante `ConnectionStrings__Calendai`.
+Los usuarios que solo existían en la implementación anterior en memoria no pueden recuperarse
+después de haber detenido el contenedor, porque no había un origen persistente que migrar. A
+partir de esta implementación, los nuevos registros y colaboradores de equipos se guardan en
+PostgreSQL y comparten una restricción única por usuario.
 
 ## Estructura del proyecto
 
@@ -77,9 +78,7 @@ CalendarioBackend/
     │   │   └── Equipo.cs
     │   ├── Repositories/                 # Persistencia (interfaz + implementación en memoria)
     │   │   ├── IEquipoRepository.cs
-    │   │   ├── InMemoryEquipoRepository.cs
-    │   │   └── PostgresEquipoRepository.cs
-    │   │   ├── Persistence/                  # DbContext y filas de almacenamiento
+    │   │   └── InMemoryEquipoRepository.cs
     │   └── Services/                     # Lógica de negocio / casos de uso
     │       ├── CalendarioService.cs
     │       ├── EquipoService.cs
@@ -139,5 +138,5 @@ usando el calendario gregoriano de .NET.
   `CalendarioService`, `EquipoService` y `AutenticacionService` vía controladores/minimal APIs.
 - Agregar un proyecto de pruebas (`CalendarioBackend.Tests` con xUnit) para las reglas de
   negocio (año bisiesto, mes de 31 días, colisión de eventos a la misma hora, login inválido, etc.).
-- Añadir migraciones de Entity Framework Core si el esquema deja de administrarse
-  mediante `database/001-schema.sql`.
+- Sustituir `InMemoryEquipoRepository` por una implementación con Entity Framework Core
+  y una base de datos relacional.

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "24Ep1dcy8/E=",
+  "dgSpecHash": "R0AeWuF6N2E=",
   "success": true,
-  "projectFilePath": "C:\\Users\\andre\\Desktop\\calendAI\\CalendarioBackend\\src\\CalendarioBackend.Console\\CalendarioBackend.Console.csproj",
+  "projectFilePath": "C:\\Users\\andre\\Desktop\\candai\\CalendAI\\CalendarioBackend\\src\\CalendarioBackend.Console\\CalendarioBackend.Console.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\andre\\.nuget\\packages\\microsoft.entityframeworkcore\\8.0.20\\microsoft.entityframeworkcore.8.0.20.nupkg.sha512",
     "C:\\Users\\andre\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\8.0.20\\microsoft.entityframeworkcore.abstractions.8.0.20.nupkg.sha512",

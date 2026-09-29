@@ -14,13 +14,6 @@ public class Colaborador
     public string Usuario { get; private set; }
     private string ContraseñaHash { get; set; }
 
-    internal Colaborador(Guid id, string usuario, string contraseñaHash)
-    {
-        Id = id;
-        Usuario = usuario;
-        ContraseñaHash = contraseñaHash;
-    }
-
     public Colaborador(string usuario, string contraseña)
     {
         if (string.IsNullOrWhiteSpace(usuario))
@@ -33,9 +26,16 @@ public class Colaborador
         ContraseñaHash = Hash(contraseña);
     }
 
+    internal Colaborador(Guid id, string usuario, string contraseñaHash)
+    {
+        Id = id;
+        Usuario = usuario;
+        ContraseñaHash = contraseñaHash;
+    }
+
     public bool ValidarContraseña(string intento) => ContraseñaHash == Hash(intento);
 
-    internal string ObtenerHashParaPersistencia() => ContraseñaHash;
+    internal string ObtenerContraseñaHash() => ContraseñaHash;
 
     public void CambiarContraseña(string actual, string nueva)
     {

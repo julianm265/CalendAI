@@ -21,7 +21,8 @@ public class EquiposController : ControllerBase
             .Select(equipo => new EquipoResumen(
                 equipo.Id,
                 equipo.NombreEquipo,
-                equipo.LColaboradores.Count))
+                equipo.LColaboradores.Count,
+                equipo.EsPersonal))
             .ToList();
 
         return Ok(equipos);
@@ -38,7 +39,8 @@ public class EquiposController : ControllerBase
                 equipo.NombreEquipo,
                 equipo.LColaboradores
                     .Select(colaborador => new ColaboradorResumen(colaborador.Id, colaborador.Usuario))
-                    .ToList()));
+                    .ToList(),
+                equipo.EsPersonal));
         }
         catch (KeyNotFoundException)
         {
@@ -52,7 +54,7 @@ public class EquiposController : ControllerBase
         try
         {
             var equipo = _equipoService.CrearEquipo(request.NombreEquipo);
-            var resumen = new EquipoResumen(equipo.Id, equipo.NombreEquipo, 0);
+            var resumen = new EquipoResumen(equipo.Id, equipo.NombreEquipo, 0, false);
             return CreatedAtAction(nameof(Obtener), new { id = equipo.Id }, resumen);
         }
         catch (ArgumentException exception)
@@ -92,6 +94,6 @@ public class EquiposController : ControllerBase
 
 public sealed record CrearEquipoRequest(string NombreEquipo);
 public sealed record RegistrarColaboradorRequest(string Usuario, string Contraseña);
-public sealed record EquipoResumen(Guid Id, string Nombre, int Colaboradores);
-public sealed record EquipoDetalle(Guid Id, string Nombre, IReadOnlyList<ColaboradorResumen> Colaboradores);
+public sealed record EquipoResumen(Guid Id, string Nombre, int Colaboradores, bool EsPersonal);
+public sealed record EquipoDetalle(Guid Id, string Nombre, IReadOnlyList<ColaboradorResumen> Colaboradores, bool EsPersonal);
 public sealed record ColaboradorResumen(Guid Id, string Usuario);

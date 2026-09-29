@@ -45,7 +45,6 @@ public class CalendarioService
         var eliminado = dia?.EliminarEvento(eventoId) ?? false;
         if (eliminado)
             _equipoRepository.Guardar(equipo);
-
         return eliminado;
     }
 

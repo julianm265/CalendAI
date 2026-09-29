@@ -6,11 +6,15 @@ services:
       POSTGRES_DB: calendai
       POSTGRES_USER: calendai_user
       POSTGRES_PASSWORD: calendai_password
-    ports:
-      - "5432:5432"
     volumes:
       - calendai_postgres_data:/var/lib/postgresql/data
       - ./CalendarioBackend/database:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calendai_user -d calendai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     restart: unless-stopped
 
   backend:
@@ -22,10 +26,11 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Calendai: Host=postgres;Port=5432;Database=calendai;Username=calendai_user;Password=calendai_password
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "5080:8080"
-    depends_on:
-      - postgres
     restart: unless-stopped
 
   frontend:
@@ -33,6 +38,10 @@ services:
       context: ./CalendarioFrontend
       dockerfile: Dockerfile
     container_name: calendai-frontend
+    # Desarrollo: los cambios en index.html, styles.css y los módulos JS se
+    # reflejan al refrescar el navegador, sin reconstruir la imagen.
+    volumes:
+      - ./CalendarioFrontend:/usr/share/nginx/html:ro
     depends_on:
       - backend
     ports:

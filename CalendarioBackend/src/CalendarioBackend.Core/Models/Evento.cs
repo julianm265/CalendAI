@@ -15,10 +15,12 @@ public class Evento
     public string? Descripcion { get; set; }
     public Guid? ColaboradorOrganizadorId { get; set; }
 
-    internal Evento(Guid id, string nombreEvento, TimeOnly horaEvento, string? lugarEvento,
-        string? descripcion, Guid? colaboradorOrganizadorId)
+    public Evento(string nombreEvento, TimeOnly horaEvento, string? lugarEvento = null,
+        string? descripcion = null, Guid? colaboradorOrganizadorId = null)
     {
-        Id = id;
+        if (string.IsNullOrWhiteSpace(nombreEvento))
+            throw new ArgumentException("El nombre del evento no puede estar vacío.", nameof(nombreEvento));
+        Id = Guid.NewGuid();
         NombreEvento = nombreEvento;
         HoraEvento = horaEvento;
         LugarEvento = lugarEvento;
@@ -26,12 +28,10 @@ public class Evento
         ColaboradorOrganizadorId = colaboradorOrganizadorId;
     }
 
-    public Evento(string nombreEvento, TimeOnly horaEvento, string? lugarEvento = null,
-        string? descripcion = null, Guid? colaboradorOrganizadorId = null)
+    internal Evento(Guid id, string nombreEvento, TimeOnly horaEvento, string? lugarEvento,
+        string? descripcion, Guid? colaboradorOrganizadorId)
     {
-        if (string.IsNullOrWhiteSpace(nombreEvento))
-            throw new ArgumentException("El nombre del evento no puede estar vacío.", nameof(nombreEvento));
-        Id = Guid.NewGuid();
+        Id = id;
         NombreEvento = nombreEvento;
         HoraEvento = horaEvento;
         LugarEvento = lugarEvento;

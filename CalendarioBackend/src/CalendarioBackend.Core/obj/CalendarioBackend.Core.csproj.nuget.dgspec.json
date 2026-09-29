@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\andre\\Desktop\\calendAI\\CalendarioBackend\\src\\CalendarioBackend.Core\\CalendarioBackend.Core.csproj": {}
+    "C:\\Users\\andre\\Desktop\\candai\\CalendAI\\CalendarioBackend\\src\\CalendarioBackend.Core\\CalendarioBackend.Core.csproj": {}
   },
   "projects": {
-    "C:\\Users\\andre\\Desktop\\calendAI\\CalendarioBackend\\src\\CalendarioBackend.Core\\CalendarioBackend.Core.csproj": {
+    "C:\\Users\\andre\\Desktop\\candai\\CalendAI\\CalendarioBackend\\src\\CalendarioBackend.Core\\CalendarioBackend.Core.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\andre\\Desktop\\calendAI\\CalendarioBackend\\src\\CalendarioBackend.Core\\CalendarioBackend.Core.csproj",
+        "projectUniqueName": "C:\\Users\\andre\\Desktop\\candai\\CalendAI\\CalendarioBackend\\src\\CalendarioBackend.Core\\CalendarioBackend.Core.csproj",
         "projectName": "CalendarioBackend.Core",
-        "projectPath": "C:\\Users\\andre\\Desktop\\calendAI\\CalendarioBackend\\src\\CalendarioBackend.Core\\CalendarioBackend.Core.csproj",
+        "projectPath": "C:\\Users\\andre\\Desktop\\candai\\CalendAI\\CalendarioBackend\\src\\CalendarioBackend.Core\\CalendarioBackend.Core.csproj",
         "packagesPath": "C:\\Users\\andre\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\andre\\Desktop\\calendAI\\CalendarioBackend\\src\\CalendarioBackend.Core\\obj\\",
+        "outputPath": "C:\\Users\\andre\\Desktop\\candai\\CalendAI\\CalendarioBackend\\src\\CalendarioBackend.Core\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

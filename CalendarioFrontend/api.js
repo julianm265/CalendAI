@@ -57,6 +57,7 @@ async function apiFetch(path, options = {}) {
   let response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
+      credentials: 'include',
       ...options,
       headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     });
@@ -110,6 +111,13 @@ export function registrarColaborador(equipoId, usuario, contraseña) {
 }
 
 /* ---------------------------- Autenticación ------------------------------ */
+
+export function registrarUsuario(usuario, contraseña) {
+  return apiFetch('/autenticacion/registro', {
+    method: 'POST',
+    body: JSON.stringify({ usuario, contraseña }),
+  });
+}
 
 export function iniciarSesion(usuario, contraseña) {
   return apiFetch('/autenticacion/login', {

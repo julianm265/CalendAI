@@ -5,7 +5,7 @@
 
 import * as api from './api.js';
 import { ApiError } from './api.js';
-import { normalizarEquipo, normalizarEvento, normalizarEventoDelMes, normalizarColaborador } from './normalize.js?v=3';
+import { normalizarEquipo, normalizarEvento, normalizarEventoDelMes, normalizarColaborador } from './normalize.js';
 import { state, setColaborador, setEquipoActivo, cerrarSesion } from './state.js';
 import {
   construirCuadriculaMes, sumarMeses, formatearFechaLarga, formatearMesAño,
@@ -18,49 +18,33 @@ import {
 
 /* ============================== Navegación entre pantallas ============================== */
 
-function mostrarLogin() {
-  qs('#screen-login').hidden = false;
-  qs('#screen-app').hidden = true;
-  qs('#login-view').hidden = false;
-  qs('#register-view').hidden = true;
-}
-
-async function mostrarRegistro() {
-  qs('#screen-login').hidden = false;
-  qs('#screen-app').hidden = true;
-  qs('#login-view').hidden = true;
-  qs('#register-view').hidden = false;
-  setFormError('register-form-error', '');
-
-  const selector = qs('#register-equipo');
-  selector.innerHTML = '<option value="">Cargando equipos…</option>';
-  try {
-    const equipos = (await api.listarEquipos() || []).map(normalizarEquipo);
-    selector.innerHTML = '<option value="">Selecciona un equipo</option>';
-    for (const equipo of equipos) {
-      const opcion = document.createElement('option');
-      opcion.value = equipo.id;
-      opcion.textContent = equipo.nombreEquipo;
-      selector.appendChild(opcion);
-    }
-    if (equipos.length === 0) {
-      setFormError('register-form-error', 'Primero debe existir un equipo para poder registrarte.');
-    }
-  } catch (error) {
-    selector.innerHTML = '<option value="">No se pudieron cargar los equipos</option>';
-    setFormError('register-form-error', mensajeDeError(error));
+function cambiarRuta(ruta) {
+  const hash = `#/${ruta}`;
+  if (window.location.hash !== hash) {
+    window.history.pushState(null, '', hash);
   }
 }
 
+function mostrarLogin({ actualizarUrl = true } = {}) {
+  if (!qs('#screen-login')) {
+    window.location.assign('/index.html');
+    return;
+  }
+  qs('#screen-login').hidden = false;
+  if (qs('#screen-app')) qs('#screen-app').hidden = true;
+  if (actualizarUrl) cambiarRuta('login');
+}
+
 function mostrarApp(vista) {
-  qs('#screen-login').hidden = true;
-  qs('#screen-app').hidden = false;
+  if (qs('#screen-login')) qs('#screen-login').hidden = true;
+  if (qs('#screen-app')) qs('#screen-app').hidden = false;
   mostrarVista(vista);
+  cambiarRuta(vista);
 }
 
 function mostrarVista(vista) {
-  qs('#view-teams').hidden = vista !== 'teams';
-  qs('#view-calendar').hidden = vista !== 'calendar';
+  if (qs('#view-teams')) qs('#view-teams').hidden = vista !== 'teams';
+  if (qs('#view-calendar')) qs('#view-calendar').hidden = vista !== 'calendar';
   renderTopbar(vista);
 }
 
@@ -69,9 +53,14 @@ function renderTopbar(vista) {
   contenedor.innerHTML = '';
 
   if (vista === 'calendar' && state.equipoActivo) {
-    contenedor.appendChild(ce('span', { class: 'topbar-chip' }, `Equipo: ${state.equipoActivo.nombreEquipo}`));
+    const tipo = state.equipoActivo.esPersonal ? 'Calendario personal' : 'Calendario colaborativo';
+    contenedor.appendChild(ce('span', { class: 'topbar-chip' }, `${tipo}: ${state.equipoActivo.nombreEquipo}`));
     contenedor.appendChild(
-      ce('button', { class: 'btn btn-secondary', type: 'button', onClick: irAEquipos }, 'Cambiar equipo'),
+      ce('button', {
+        class: 'btn btn-secondary',
+        type: 'button',
+        onClick: () => window.location.assign('/index.html'),
+      }, 'Cambiar calendario'),
     );
     contenedor.appendChild(
       ce('button', { class: 'btn btn-secondary', type: 'button', onClick: abrirColaboradores }, 'Colaboradores'),
@@ -96,7 +85,45 @@ function manejarCerrarSesion() {
   mostrarLogin();
 }
 
-/* ==================================== LOGIN ==================================== */
+/* ==================================== LOGIN & REGISTRO ==================================== */
+
+let isRegistering = false;
+
+// Función para alternar visualmente entre Iniciar Sesión y Registrarse
+function cambiarModoAuth(e) {
+  if (e) e.preventDefault();
+  isRegistering = !isRegistering;
+  
+  clearFieldErrors(['login-usuario', 'login-password']);
+  setFormError('login-form-error', '');
+  qs('#form-login').reset();
+
+  const title = qs('#auth-title');
+  const subtitle = qs('#auth-subtitle');
+  const submitBtn = qs('#login-submit');
+  const teamFieldWrapper = qs('#login-team-wrapper');
+  const optionsBlock = qs('#login-options');
+  const switchText = qs('#auth-switch-text');
+  const switchBtn = qs('#toggle-auth-mode');
+
+  if (isRegistering) {
+    title.textContent = 'Crea tu cuenta';
+    subtitle.textContent = 'Regístrate para empezar a organizar';
+    submitBtn.textContent = 'Registrarse';
+    if (teamFieldWrapper) teamFieldWrapper.style.display = 'block';
+    if (optionsBlock) optionsBlock.style.display = 'none';
+    switchText.textContent = '¿Ya tienes cuenta? ';
+    switchBtn.textContent = 'Inicia sesión';
+  } else {
+    title.textContent = 'Bienvenido de vuelta';
+    subtitle.textContent = 'Ingresa a tu cuenta para continuar';
+    submitBtn.textContent = 'Iniciar sesión';
+    if (teamFieldWrapper) teamFieldWrapper.style.display = 'none';
+    if (optionsBlock) optionsBlock.style.display = 'flex';
+    switchText.textContent = '¿No tienes usuario todavía? ';
+    switchBtn.textContent = 'Regístrate';
+  }
+}
 
 async function manejarSubmitLogin(event) {
   event.preventDefault();
@@ -105,16 +132,22 @@ async function manejarSubmitLogin(event) {
 
   const usuario = qs('#login-usuario').value.trim();
   const contraseña = qs('#login-password').value;
-
   let valido = true;
   if (!usuario) { setFieldError('login-usuario', 'Escribe tu usuario.'); valido = false; }
   if (!contraseña) { setFieldError('login-password', 'Escribe tu contraseña.'); valido = false; }
   if (!valido) return;
 
   const boton = qs('#login-submit');
-  setButtonLoading(boton, true, 'Iniciando sesión…');
+  setButtonLoading(boton, true, isRegistering ? 'Registrando…' : 'Iniciando sesión…');
 
   try {
+    if (isRegistering) {
+      // La cuenta se crea sin equipo; este se puede elegir o crear después.
+      await api.registrarUsuario(usuario, contraseña);
+      toast(`Cuenta "${usuario}" creada con éxito.`, 'success');
+    }
+
+    // 2. Ejecutar login normal
     const respuesta = await api.iniciarSesion(usuario, contraseña);
     const colaborador = normalizarColaborador(respuesta?.colaborador ?? respuesta);
 
@@ -124,53 +157,16 @@ async function manejarSubmitLogin(event) {
     }
 
     setColaborador(colaborador);
-    qs('#form-login').reset(); // nunca dejar la contraseña en el formulario
+    qs('#form-login').reset();
     toast(`Bienvenido, ${colaborador.usuario}.`, 'success');
+    const equipoRespuesta = respuesta?.equipo ?? respuesta?.Equipo ?? null;
+    setEquipoActivo(equipoRespuesta ? normalizarEquipo(equipoRespuesta) : null);
 
-    if (state.equipoActivo) {
-      await irACalendario(state.equipoActivo);
-    } else {
-      irAEquipos();
-    }
+    // El calendario se sirve como una página HTML independiente del login.
+    window.location.assign('/calendar.html');
   } catch (error) {
     qs('#login-password').value = '';
     setFormError('login-form-error', mensajeDeError(error));
-  } finally {
-    setButtonLoading(boton, false);
-  }
-}
-
-async function manejarSubmitRegistro(event) {
-  event.preventDefault();
-  clearFieldErrors(['register-equipo', 'register-usuario', 'register-password']);
-  setFormError('register-form-error', '');
-
-  const equipoId = qs('#register-equipo').value;
-  const usuario = qs('#register-usuario').value.trim();
-  const contraseña = qs('#register-password').value;
-  let valido = true;
-
-  if (!equipoId) { setFieldError('register-equipo', 'Selecciona un equipo.'); valido = false; }
-  if (!usuario) { setFieldError('register-usuario', 'Escribe un usuario.'); valido = false; }
-  if (contraseña.length < 6) {
-    setFieldError('register-password', 'La contraseña debe tener al menos 6 caracteres.');
-    valido = false;
-  }
-  if (!valido) return;
-
-  const boton = qs('#register-submit');
-  setButtonLoading(boton, true, 'Registrando…');
-  try {
-    const respuesta = await api.registrarColaborador(equipoId, usuario, contraseña);
-    const colaborador = normalizarColaborador(respuesta?.colaborador ?? respuesta);
-    const equipo = normalizarEquipo(await api.obtenerEquipo(equipoId));
-    setColaborador(colaborador);
-    setEquipoActivo({ id: equipo.id, nombreEquipo: equipo.nombreEquipo });
-    qs('#form-register').reset();
-    toast(`Usuario "${colaborador.usuario}" creado.`, 'success');
-    await irACalendario({ id: equipo.id, nombreEquipo: equipo.nombreEquipo });
-  } catch (error) {
-    setFormError('register-form-error', mensajeDeError(error));
   } finally {
     setButtonLoading(boton, false);
   }
@@ -288,7 +284,8 @@ async function refrescarDetalleEquipo() {
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       toast('El equipo activo ya no existe. Elige otro equipo.', 'error');
-      irAEquipos();
+      setEquipoActivo(null);
+      window.location.replace('/index.html');
       return;
     }
     toast(mensajeDeError(error), 'error');
@@ -641,36 +638,58 @@ function mensajeDeError(error) {
 /* ===================================== Arranque ===================================== */
 
 function inicializar() {
-  qs('#form-login').addEventListener('submit', manejarSubmitLogin);
-  qs('#form-register').addEventListener('submit', manejarSubmitRegistro);
-  qs('#go-to-register').addEventListener('click', mostrarRegistro);
-  qs('#back-to-login').addEventListener('click', mostrarLogin);
-  qs('#go-to-teams').addEventListener('click', irAEquipos);
+  const esPaginaCalendario = Boolean(qs('#view-calendar') && !qs('#form-login'));
 
-  qs('#form-crear-equipo').addEventListener('submit', manejarSubmitCrearEquipo);
+  if (qs('#toggle-auth-mode')) qs('#toggle-auth-mode').addEventListener('click', cambiarModoAuth);
+  if (qs('#form-login')) qs('#form-login').addEventListener('submit', manejarSubmitLogin);
+  if (qs('#form-crear-equipo')) qs('#form-crear-equipo').addEventListener('submit', manejarSubmitCrearEquipo);
+  if (qs('#prev-month')) qs('#prev-month').addEventListener('click', manejarMesAnterior);
+  if (qs('#next-month')) qs('#next-month').addEventListener('click', manejarMesSiguiente);
+  if (qs('#open-new-event')) qs('#open-new-event').addEventListener('click', abrirDrawerEvento);
+  if (qs('#open-new-event-day')) qs('#open-new-event-day').addEventListener('click', abrirDrawerEvento);
+  if (qs('#close-event-drawer')) qs('#close-event-drawer').addEventListener('click', cerrarDrawerEvento);
+  if (qs('#cancel-event')) qs('#cancel-event').addEventListener('click', cerrarDrawerEvento);
+  if (qs('#event-drawer-backdrop')) qs('#event-drawer-backdrop').addEventListener('click', cerrarDrawerEvento);
+  if (qs('#form-evento')) qs('#form-evento').addEventListener('submit', manejarSubmitEvento);
+  if (qs('#close-collab-drawer')) qs('#close-collab-drawer').addEventListener('click', cerrarColaboradores);
+  if (qs('#collab-drawer-backdrop')) qs('#collab-drawer-backdrop').addEventListener('click', cerrarColaboradores);
+  if (qs('#form-colaborador')) qs('#form-colaborador').addEventListener('submit', manejarSubmitColaborador);
 
-  qs('#prev-month').addEventListener('click', manejarMesAnterior);
-  qs('#next-month').addEventListener('click', manejarMesSiguiente);
-
-  qs('#open-new-event').addEventListener('click', abrirDrawerEvento);
-  qs('#open-new-event-day').addEventListener('click', abrirDrawerEvento);
-  qs('#close-event-drawer').addEventListener('click', cerrarDrawerEvento);
-  qs('#cancel-event').addEventListener('click', cerrarDrawerEvento);
-  qs('#event-drawer-backdrop').addEventListener('click', cerrarDrawerEvento);
-  qs('#form-evento').addEventListener('submit', manejarSubmitEvento);
-
-  qs('#close-collab-drawer').addEventListener('click', cerrarColaboradores);
-  qs('#collab-drawer-backdrop').addEventListener('click', cerrarColaboradores);
-  qs('#form-colaborador').addEventListener('submit', manejarSubmitColaborador);
-
-  // Restaurar sesión guardada en este navegador (ver state.js: no hay JWT todavía).
-  if (state.colaborador && state.equipoActivo) {
+  if (esPaginaCalendario) {
+    if (!state.colaborador || !state.equipoActivo) {
+      window.location.replace('/index.html');
+      return;
+    }
     irACalendario(state.equipoActivo);
-  } else if (state.colaborador) {
-    irAEquipos();
-  } else {
-    mostrarLogin();
+    return;
   }
+
+  if (window.location.hash === '#/calendar' && state.colaborador && state.equipoActivo) {
+    window.location.replace('/calendar.html');
+    return;
+  }
+
+  if (state.colaborador && state.equipoActivo) {
+    window.location.replace('/calendar.html');
+  } else {
+    mostrarLogin({ actualizarUrl: false });
+  }
+}
+
+function manejarCambioDeRuta() {
+  const ruta = window.location.hash.replace(/^#\//, '');
+
+  if (ruta === 'calendar' && state.colaborador && state.equipoActivo) {
+    irACalendario(state.equipoActivo);
+    return;
+  }
+
+  if (ruta === 'teams' && state.colaborador) {
+    irAEquipos();
+    return;
+  }
+
+  mostrarLogin({ actualizarUrl: ruta !== 'login' });
 }
 
 inicializar();

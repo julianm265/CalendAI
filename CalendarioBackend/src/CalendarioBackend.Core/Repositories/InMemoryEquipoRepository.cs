@@ -19,10 +19,7 @@ public class InMemoryEquipoRepository : IEquipoRepository
         return equipo;
     }
 
-    public void Guardar(Equipo equipo)
-    {
-        _equipos[equipo.Id] = equipo;
-    }
+    public void Guardar(Equipo equipo) => _equipos[equipo.Id] = equipo;
 
     public Equipo? ObtenerPorId(Guid id) =>
         _equipos.TryGetValue(id, out var equipo) ? equipo : null;
@@ -33,4 +30,12 @@ public class InMemoryEquipoRepository : IEquipoRepository
     public IReadOnlyList<Equipo> ObtenerTodos() => _equipos.Values.ToList().AsReadOnly();
 
     public bool Eliminar(Guid id) => _equipos.TryRemove(id, out _);
+
+    public Equipo CrearCalendarioPersonal(Colaborador colaborador)
+    {
+        var equipo = new Equipo($"Calendario de {colaborador.Usuario}", true);
+        equipo.AgregarColaborador(colaborador);
+        Agregar(equipo);
+        return equipo;
+    }
 }

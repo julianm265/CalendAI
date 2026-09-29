@@ -17,6 +17,8 @@ public class Calendario
         Id = Guid.NewGuid();
     }
 
+    internal Calendario(Guid id) => Id = id;
+
     /// <summary>Obtiene el año solicitado, generándolo (con sus meses, semanas y días) si aún no existe.</summary>
     public Anio ObtenerOCrearAño(int numAño)
     {
