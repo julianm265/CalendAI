@@ -18,18 +18,38 @@ public class EquipoService
         _colaboradorRepository = colaboradorRepository;
     }
 
-    public Equipo CrearEquipo(string nombreEquipo)
+    /// <summary>
+    /// Crea un equipo. Si se indica un creador, queda como su primer miembro: solo los
+    /// miembros de un equipo pueden ver sus eventos o sumar colaboradores.
+    /// </summary>
+    public Equipo CrearEquipo(string nombreEquipo, Colaborador? creador = null)
     {
         if (_equipoRepository.ObtenerPorNombre(nombreEquipo) is not null)
             throw new InvalidOperationException($"Ya existe un equipo llamado '{nombreEquipo}'.");
 
-        var equipo = new Equipo(nombreEquipo);
-        return _equipoRepository.Agregar(equipo);
+        var equipo = _equipoRepository.Agregar(new Equipo(nombreEquipo));
+        if (creador is null)
+            return equipo;
+
+        equipo.AgregarColaborador(creador);
+        _equipoRepository.AgregarColaborador(equipo.Id, creador);
+        return equipo;
     }
+
+    /// <summary>Indica si el colaborador pertenece al equipo (autorización de la API).</summary>
+    public bool EsMiembro(Guid equipoId, Guid colaboradorId) =>
+        _equipoRepository.ObtenerPorId(equipoId)?.BuscarColaborador(colaboradorId) is not null;
+
+    public IReadOnlyList<Equipo> ListarEquiposDe(Guid colaboradorId) =>
+        _equipoRepository.ObtenerTodos()
+            .Where(equipo => equipo.BuscarColaborador(colaboradorId) is not null)
+            .ToList();
 
     public Colaborador RegistrarColaborador(Guid equipoId, string usuario, string contraseña)
     {
         var equipo = ObtenerEquipoOFallar(equipoId);
+        if (equipo.EsPersonal)
+            throw new InvalidOperationException("Un calendario personal no admite otros colaboradores.");
         if (_colaboradorRepository?.ExistePorUsuario(usuario) == true ||
             _equipoRepository.ObtenerTodos().Any(item => item.BuscarColaborador(usuario) is not null))
             throw new InvalidOperationException($"El usuario '{usuario}' ya existe.");

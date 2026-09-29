@@ -6,6 +6,14 @@
 
 export const API_BASE_URL = '/api';
 
+// Token Bearer de la sesión en curso. Lo inyecta el controlador (app.js) tras el
+// login o al arrancar desde sessionStorage; api.js no conoce el almacenamiento.
+let tokenDeSesion = null;
+
+export function establecerToken(token) {
+  tokenDeSesion = token || null;
+}
+
 /** Error enriquecido con el código de estado HTTP (0 = fallo de red/CORS). */
 export class ApiError extends Error {
   constructor(status, message) {
@@ -59,7 +67,11 @@ async function apiFetch(path, options = {}) {
     response = await fetch(`${API_BASE_URL}${path}`, {
       credentials: 'include',
       ...options,
-      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(tokenDeSesion ? { Authorization: `Bearer ${tokenDeSesion}` } : {}),
+        ...(options.headers || {}),
+      },
     });
   } catch {
     throw new ApiError(
@@ -124,6 +136,10 @@ export function iniciarSesion(usuario, contraseña) {
     method: 'POST',
     body: JSON.stringify({ usuario, contraseña }),
   });
+}
+
+export function cerrarSesionEnApi() {
+  return apiFetch('/autenticacion/logout', { method: 'POST' });
 }
 
 /* ------------------------------- Eventos -------------------------------- */

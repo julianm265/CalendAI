@@ -9,6 +9,7 @@ public sealed class CalendarioDbContext(DbContextOptions<CalendarioDbContext> op
     public DbSet<CalendarioRow> Calendarios => Set<CalendarioRow>();
     public DbSet<ColaboradorRow> Colaboradores => Set<ColaboradorRow>();
     public DbSet<EventoRow> Eventos => Set<EventoRow>();
+    public DbSet<MiembroRow> Miembros => Set<MiembroRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,6 +45,12 @@ public sealed class CalendarioDbContext(DbContextOptions<CalendarioDbContext> op
         modelBuilder.Entity<EventoRow>().HasOne<EquipoRow>().WithMany().HasForeignKey(row => row.EquipoId);
         modelBuilder.Entity<EventoRow>().HasOne<ColaboradorRow>().WithMany().HasForeignKey(row => row.ColaboradorOrganizadorId).IsRequired(false);
         modelBuilder.Entity<EventoRow>().HasIndex(row => new { row.EquipoId, row.Fecha, row.Hora }).IsUnique();
+        modelBuilder.Entity<MiembroRow>().ToTable("equipo_miembros");
+        modelBuilder.Entity<MiembroRow>().HasKey(row => new { row.EquipoId, row.ColaboradorId });
+        modelBuilder.Entity<MiembroRow>().Property(row => row.EquipoId).HasColumnName("equipo_id");
+        modelBuilder.Entity<MiembroRow>().Property(row => row.ColaboradorId).HasColumnName("colaborador_id");
+        modelBuilder.Entity<MiembroRow>().HasOne<EquipoRow>().WithMany().HasForeignKey(row => row.EquipoId);
+        modelBuilder.Entity<MiembroRow>().HasOne<ColaboradorRow>().WithMany().HasForeignKey(row => row.ColaboradorId);
     }
 }
 
@@ -66,6 +73,13 @@ public sealed class ColaboradorRow
     public string Usuario { get; set; } = "";
     public string ContraseñaHash { get; set; } = "";
     public Guid? EquipoId { get; set; }
+}
+
+/// <summary>Pertenencia de un colaborador a un equipo (un colaborador puede estar en varios).</summary>
+public sealed class MiembroRow
+{
+    public Guid EquipoId { get; set; }
+    public Guid ColaboradorId { get; set; }
 }
 
 public sealed class EventoRow

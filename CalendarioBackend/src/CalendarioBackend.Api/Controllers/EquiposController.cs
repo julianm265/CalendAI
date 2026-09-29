@@ -1,3 +1,4 @@
+using CalendarioBackend.Api.Seguridad;
 using CalendarioBackend.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,16 +9,22 @@ namespace CalendarioBackend.Api.Controllers;
 public class EquiposController : ControllerBase
 {
     private readonly EquipoService _equipoService;
+    private readonly SesionActual _sesionActual;
 
-    public EquiposController(EquipoService equipoService)
+    public EquiposController(EquipoService equipoService, SesionActual sesionActual)
     {
         _equipoService = equipoService;
+        _sesionActual = sesionActual;
     }
 
+    /// <summary>Solo se listan los equipos a los que pertenece quien pide.</summary>
     [HttpGet]
     public ActionResult<IReadOnlyList<EquipoResumen>> Listar()
     {
-        var equipos = _equipoService.ListarEquipos()
+        if (_sesionActual.ColaboradorId is not Guid colaboradorId)
+            return Unauthorized();
+
+        var equipos = _equipoService.ListarEquiposDe(colaboradorId)
             .Select(equipo => new EquipoResumen(
                 equipo.Id,
                 equipo.NombreEquipo,
@@ -31,6 +38,11 @@ public class EquiposController : ControllerBase
     [HttpGet("{id:guid}")]
     public ActionResult<EquipoDetalle> Obtener(Guid id)
     {
+        if (_sesionActual.ColaboradorId is not Guid colaboradorId)
+            return Unauthorized();
+        if (!_equipoService.EsMiembro(id, colaboradorId))
+            return NotFound();
+
         try
         {
             var equipo = _equipoService.ObtenerEquipo(id);
@@ -51,10 +63,13 @@ public class EquiposController : ControllerBase
     [HttpPost]
     public ActionResult<EquipoResumen> Crear(CrearEquipoRequest request)
     {
+        if (_sesionActual.Colaborador is not { } creador)
+            return Unauthorized();
+
         try
         {
-            var equipo = _equipoService.CrearEquipo(request.NombreEquipo);
-            var resumen = new EquipoResumen(equipo.Id, equipo.NombreEquipo, 0, false);
+            var equipo = _equipoService.CrearEquipo(request.NombreEquipo, creador);
+            var resumen = new EquipoResumen(equipo.Id, equipo.NombreEquipo, equipo.LColaboradores.Count, false);
             return CreatedAtAction(nameof(Obtener), new { id = equipo.Id }, resumen);
         }
         catch (ArgumentException exception)
@@ -72,6 +87,11 @@ public class EquiposController : ControllerBase
         Guid id,
         RegistrarColaboradorRequest request)
     {
+        if (_sesionActual.ColaboradorId is not Guid colaboradorId)
+            return Unauthorized();
+        if (!_equipoService.EsMiembro(id, colaboradorId))
+            return NotFound();
+
         try
         {
             var colaborador = _equipoService.RegistrarColaborador(id, request.Usuario, request.Contraseña);
