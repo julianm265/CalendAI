@@ -34,7 +34,7 @@ public class CalendarioService
             ?? throw new InvalidOperationException($"No fue posible resolver el día {fecha:dd/MM/yyyy}.");
 
         var evento = dia.AgregarEvento(nombreEvento, hora, lugar, descripcion, colaboradorOrganizadorId);
-        _equipoRepository.Guardar(equipo);
+        _equipoRepository.AgregarEvento(equipo.Id, fecha, evento);
         return evento;
     }
 
@@ -44,7 +44,7 @@ public class CalendarioService
         var dia = equipo.Calendario.BuscarDia(fecha);
         var eliminado = dia?.EliminarEvento(eventoId) ?? false;
         if (eliminado)
-            _equipoRepository.Guardar(equipo);
+            _equipoRepository.EliminarEvento(equipo.Id, eventoId);
         return eliminado;
     }
 

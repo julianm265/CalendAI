@@ -32,9 +32,11 @@ La API expone, entre otras, estas rutas:
 
 ## Ejecutar todo con Docker Compose
 
-Desde la carpeta raíz `calendAI`:
+Desde la carpeta raíz `calendAI`, creá un archivo `.env` a partir de `.env.example` con la
+contraseña de PostgreSQL (el archivo `.env` no se versiona):
 
 ```bash
+cp .env.example .env
 docker compose up --build
 ```
 
@@ -51,8 +53,10 @@ La aplicación usa PostgreSQL mediante Entity Framework Core. Docker Compose cre
 automáticamente al iniciar la API. Las cuentas, equipos y eventos sobreviven a reinicios del
 backend y el login consulta siempre el mismo repositorio persistente de colaboradores.
 
-La cadena de conexión local está en `appsettings.json` y Docker la sobrescribe mediante
-`ConnectionStrings__Calendai` para usar `Host=postgres`. `docker compose down` conserva la
+La cadena de conexión no se guarda en el repositorio: la API la lee de
+`ConnectionStrings__Calendai`, que Docker Compose arma con las variables de `.env`. Para
+ejecutar la API fuera de Docker definí esa variable de entorno o usa los secretos de usuario
+(`dotnet user-secrets set ConnectionStrings:Calendai "..."`). `docker compose down` conserva la
 base; no uses `docker compose down -v` si necesitas conservar los datos.
 
 Los usuarios que solo existían en la implementación anterior en memoria no pueden recuperarse
