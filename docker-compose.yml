@@ -3,14 +3,14 @@ services:
     image: postgres:16
     container_name: calendai-postgres
     environment:
-      POSTGRES_DB: calendai
-      POSTGRES_USER: calendai_user
-      POSTGRES_PASSWORD: calendai_password
+      POSTGRES_DB: ${POSTGRES_DB:-calendai}
+      POSTGRES_USER: ${POSTGRES_USER:-calendai_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en el archivo .env}
     volumes:
       - calendai_postgres_data:/var/lib/postgresql/data
       - ./CalendarioBackend/database:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U calendai_user -d calendai"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -25,7 +25,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Calendai: Host=postgres;Port=5432;Database=calendai;Username=calendai_user;Password=calendai_password
+      ConnectionStrings__Calendai: Host=postgres;Port=5432;Database=${POSTGRES_DB:-calendai};Username=${POSTGRES_USER:-calendai_user};Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en el archivo .env}
     depends_on:
       postgres:
         condition: service_healthy

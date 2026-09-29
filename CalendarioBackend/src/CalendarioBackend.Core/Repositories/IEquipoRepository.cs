@@ -11,6 +11,10 @@ public interface IEquipoRepository
 {
     Equipo Agregar(Equipo equipo);
     void Guardar(Equipo equipo);
+    void AgregarColaborador(Guid equipoId, Colaborador colaborador);
+    void EliminarColaborador(Guid equipoId, Guid colaboradorId);
+    void AgregarEvento(Guid equipoId, DateOnly fecha, Evento evento);
+    void EliminarEvento(Guid equipoId, Guid eventoId);
     Equipo? ObtenerPorId(Guid id);
     Equipo? ObtenerPorNombre(string nombre);
     IReadOnlyList<Equipo> ObtenerTodos();

@@ -36,7 +36,7 @@ public class EquipoService
 
         var colaborador = new Colaborador(usuario, contraseña);
         equipo.AgregarColaborador(colaborador);
-        _equipoRepository.Guardar(equipo);
+        _equipoRepository.AgregarColaborador(equipo.Id, colaborador);
         return colaborador;
     }
 
@@ -45,7 +45,7 @@ public class EquipoService
         var equipo = ObtenerEquipoOFallar(equipoId);
         if (!equipo.EliminarColaborador(colaboradorId))
             throw new KeyNotFoundException("El colaborador no pertenece a este equipo.");
-        _equipoRepository.Guardar(equipo);
+        _equipoRepository.EliminarColaborador(equipo.Id, colaboradorId);
     }
 
     public IReadOnlyList<Equipo> ListarEquipos() => _equipoRepository.ObtenerTodos();

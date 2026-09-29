@@ -18,10 +18,12 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddDbContext<CalendarioDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("Calendai")
-        ?? builder.Configuration.GetConnectionString("Calendario")));
+var cadenaDeConexion = builder.Configuration.GetConnectionString("Calendai")
+    ?? builder.Configuration.GetConnectionString("Calendario")
+    ?? throw new InvalidOperationException(
+        "Falta la cadena de conexión 'Calendai'. Definí ConnectionStrings__Calendai (por ejemplo en .env o en los secretos de usuario).");
+
+builder.Services.AddDbContext<CalendarioDbContext>(options => options.UseNpgsql(cadenaDeConexion));
 builder.Services.AddScoped<IEquipoRepository, PostgresEquipoRepository>();
 builder.Services.AddScoped<IColaboradorRepository, PostgresColaboradorRepository>();
 builder.Services.AddScoped<EquipoService>();
