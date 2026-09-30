@@ -28,5 +28,16 @@ public class Evento
         ColaboradorOrganizadorId = colaboradorOrganizadorId;
     }
 
+    internal Evento(Guid id, string nombreEvento, TimeOnly horaEvento, string? lugarEvento,
+        string? descripcion, Guid? colaboradorOrganizadorId)
+    {
+        Id = id;
+        NombreEvento = nombreEvento;
+        HoraEvento = horaEvento;
+        LugarEvento = lugarEvento;
+        Descripcion = descripcion;
+        ColaboradorOrganizadorId = colaboradorOrganizadorId;
+    }
+
     public override string ToString() => $"{HoraEvento:HH\\:mm} - {NombreEvento} ({LugarEvento})";
 }

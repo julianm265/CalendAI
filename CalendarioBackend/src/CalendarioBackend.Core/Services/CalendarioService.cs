@@ -33,14 +33,19 @@ public class CalendarioService
         var dia = año.BuscarDia(fecha)
             ?? throw new InvalidOperationException($"No fue posible resolver el día {fecha:dd/MM/yyyy}.");
 
-        return dia.AgregarEvento(nombreEvento, hora, lugar, descripcion, colaboradorOrganizadorId);
+        var evento = dia.AgregarEvento(nombreEvento, hora, lugar, descripcion, colaboradorOrganizadorId);
+        _equipoRepository.AgregarEvento(equipo.Id, fecha, evento);
+        return evento;
     }
 
     public bool EliminarEvento(Guid equipoId, DateOnly fecha, Guid eventoId)
     {
         var equipo = ObtenerEquipoOFallar(equipoId);
         var dia = equipo.Calendario.BuscarDia(fecha);
-        return dia?.EliminarEvento(eventoId) ?? false;
+        var eliminado = dia?.EliminarEvento(eventoId) ?? false;
+        if (eliminado)
+            _equipoRepository.EliminarEvento(equipo.Id, eventoId);
+        return eliminado;
     }
 
     public IEnumerable<Evento> ObtenerEventosDelDia(Guid equipoId, DateOnly fecha)
