@@ -24,6 +24,18 @@ namespace CalendarioBackend.Tests
             return equipo;
         }
 
+        public void Guardar(Equipo equipo) => throw new NotImplementedException();
+
+        public void AgregarColaborador(Guid equipoId, Colaborador colaborador) => throw new NotImplementedException();
+
+        public void EliminarColaborador(Guid equipoId, Guid colaboradorId) => throw new NotImplementedException();
+
+        public void AgregarEvento(Guid equipoId, DateOnly fecha, Evento evento) => throw new NotImplementedException();
+
+        public void EliminarEvento(Guid equipoId, Guid eventoId) => throw new NotImplementedException();
+
+        public Equipo CrearCalendarioPersonal(Colaborador colaborador) => throw new NotImplementedException();
+
         public void Actualizar(Equipo equipo) { }
 
         public bool Eliminar(Guid id) => true;
