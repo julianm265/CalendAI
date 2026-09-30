@@ -1,0 +1,25 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restaurar dependencias
+        run: dotnet restore CalendarioBackend/CalendarioBackend.sln
+
+      - name: Compilar
+        run: dotnet build CalendarioBackend/CalendarioBackend.sln --no-restore
+
+      - name: Ejecutar Pruebas Automatizadas
+        run: dotnet test CalendarioBackend/CalendarioBackend.sln --no-build --verbosity normal
+
