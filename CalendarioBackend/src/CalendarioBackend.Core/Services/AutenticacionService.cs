@@ -26,6 +26,9 @@ public class AutenticacionService
     /// <summary>Devuelve el colaborador autenticado o null si usuario/contraseña no son válidos.</summary>
     public Colaborador? Autenticar(string usuario, string contraseña)
     {
+        if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrEmpty(contraseña))
+            return null;
+
         var colaborador = _colaboradorRepository?.ObtenerPorUsuario(usuario)
             ?? _equipoRepository.ObtenerTodos()
                 .Select(equipo => equipo.BuscarColaborador(usuario))
@@ -52,14 +55,17 @@ public class AutenticacionService
     /// <summary>Registra una cuenta que todavía no pertenece a ningún equipo.</summary>
     public Colaborador RegistrarUsuario(string usuario, string contraseña)
     {
-        if (_colaboradorRepository?.ExistePorUsuario(usuario) == true ||
+        if (_colaboradorRepository is null)
+            throw new InvalidOperationException("Se requiere un repositorio de colaboradores para registrar usuarios.");
+
+        if (_colaboradorRepository.ExistePorUsuario(usuario) ||
             _equipoRepository.ObtenerTodos().Any(equipo => equipo.BuscarColaborador(usuario) is not null))
         {
             throw new InvalidOperationException($"El usuario '{usuario}' ya existe.");
         }
 
         var colaborador = new Colaborador(usuario, contraseña);
-        _colaboradorRepository?.Agregar(colaborador, null);
+        _colaboradorRepository.Agregar(colaborador, null);
         return colaborador;
     }
 }
