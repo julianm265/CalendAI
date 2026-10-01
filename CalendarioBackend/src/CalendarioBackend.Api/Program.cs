@@ -1,6 +1,8 @@
 using CalendarioBackend.Core.Repositories;
+using CalendarioBackend.Core.Persistence;
 using CalendarioBackend.Core.Services;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,12 +18,27 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddSingleton<IEquipoRepository, InMemoryEquipoRepository>();
-builder.Services.AddSingleton<EquipoService>();
-builder.Services.AddSingleton<CalendarioService>();
-builder.Services.AddSingleton<AutenticacionService>();
+var cadenaDeConexion = builder.Configuration.GetConnectionString("Calendai")
+    ?? builder.Configuration.GetConnectionString("Calendario")
+    ?? throw new InvalidOperationException(
+        "Falta la cadena de conexión 'Calendai'. Definí ConnectionStrings__Calendai (por ejemplo en .env o en los secretos de usuario).");
+
+builder.Services.AddDbContext<CalendarioDbContext>(options => options.UseNpgsql(cadenaDeConexion));
+builder.Services.AddScoped<IEquipoRepository, PostgresEquipoRepository>();
+builder.Services.AddScoped<IColaboradorRepository, PostgresColaboradorRepository>();
+builder.Services.AddScoped<EquipoService>();
+builder.Services.AddScoped<CalendarioService>();
+builder.Services.AddScoped<AutenticacionService>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<CalendarioDbContext>();
+    db.Database.EnsureCreated();
+    db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS equipos ADD COLUMN IF NOT EXISTS es_personal boolean NOT NULL DEFAULT false");
+    db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS colaboradores ALTER COLUMN equipo_id DROP NOT NULL");
+}
 
 app.UseRouting();
 app.UseCors("Frontend");

@@ -10,10 +10,12 @@ namespace CalendarioBackend.Core.Services;
 public class EquipoService
 {
     private readonly IEquipoRepository _equipoRepository;
+    private readonly IColaboradorRepository? _colaboradorRepository;
 
-    public EquipoService(IEquipoRepository equipoRepository)
+    public EquipoService(IEquipoRepository equipoRepository, IColaboradorRepository? colaboradorRepository = null)
     {
         _equipoRepository = equipoRepository;
+        _colaboradorRepository = colaboradorRepository;
     }
 
     public Equipo CrearEquipo(string nombreEquipo)
@@ -28,8 +30,13 @@ public class EquipoService
     public Colaborador RegistrarColaborador(Guid equipoId, string usuario, string contraseña)
     {
         var equipo = ObtenerEquipoOFallar(equipoId);
+        if (_colaboradorRepository?.ExistePorUsuario(usuario) == true ||
+            _equipoRepository.ObtenerTodos().Any(item => item.BuscarColaborador(usuario) is not null))
+            throw new InvalidOperationException($"El usuario '{usuario}' ya existe.");
+
         var colaborador = new Colaborador(usuario, contraseña);
         equipo.AgregarColaborador(colaborador);
+        _equipoRepository.AgregarColaborador(equipo.Id, colaborador);
         return colaborador;
     }
 
@@ -38,6 +45,7 @@ public class EquipoService
         var equipo = ObtenerEquipoOFallar(equipoId);
         if (!equipo.EliminarColaborador(colaboradorId))
             throw new KeyNotFoundException("El colaborador no pertenece a este equipo.");
+        _equipoRepository.EliminarColaborador(equipo.Id, colaboradorId);
     }
 
     public IReadOnlyList<Equipo> ListarEquipos() => _equipoRepository.ObtenerTodos();

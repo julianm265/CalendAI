@@ -10,7 +10,13 @@ namespace CalendarioBackend.Core.Services;
 public class AutenticacionService
 {
     private readonly IEquipoRepository _equipoRepository;
-    private readonly List<Colaborador> _usuariosIndependientes = new();
+    private readonly IColaboradorRepository? _colaboradorRepository;
+
+    public AutenticacionService(IEquipoRepository equipoRepository, IColaboradorRepository colaboradorRepository)
+    {
+        _equipoRepository = equipoRepository;
+        _colaboradorRepository = colaboradorRepository;
+    }
 
     public AutenticacionService(IEquipoRepository equipoRepository)
     {
@@ -20,34 +26,46 @@ public class AutenticacionService
     /// <summary>Devuelve el colaborador autenticado o null si usuario/contraseña no son válidos.</summary>
     public Colaborador? Autenticar(string usuario, string contraseña)
     {
-        var usuarioIndependiente = _usuariosIndependientes
-            .FirstOrDefault(colaborador => colaborador.Usuario.Equals(usuario, StringComparison.OrdinalIgnoreCase));
+        if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrEmpty(contraseña))
+            return null;
 
-        if (usuarioIndependiente is not null && usuarioIndependiente.ValidarContraseña(contraseña))
-            return usuarioIndependiente;
+        var colaborador = _colaboradorRepository?.ObtenerPorUsuario(usuario)
+            ?? _equipoRepository.ObtenerTodos()
+                .Select(equipo => equipo.BuscarColaborador(usuario))
+                .FirstOrDefault(encontrado => encontrado is not null);
+        return colaborador is not null && colaborador.ValidarContraseña(contraseña)
+            ? colaborador
+            : null;
+    }
 
-        foreach (var equipo in _equipoRepository.ObtenerTodos())
-        {
-            var colaborador = equipo.BuscarColaborador(usuario);
-            if (colaborador is not null && colaborador.ValidarContraseña(contraseña))
-                return colaborador;
-        }
+    public Equipo? ObtenerEquipoDelColaborador(Colaborador colaborador) =>
+        _equipoRepository.ObtenerTodos()
+            .FirstOrDefault(equipo => equipo.BuscarColaborador(colaborador.Id) is not null);
 
-        return null;
+    public Equipo ObtenerOCrearCalendarioPersonal(Colaborador colaborador)
+    {
+        var equipo = ObtenerEquipoDelColaborador(colaborador);
+        if (equipo is not null) return equipo;
+
+        var calendarioPersonal = _equipoRepository.CrearCalendarioPersonal(colaborador);
+        _colaboradorRepository?.AsignarAEquipo(colaborador.Id, calendarioPersonal.Id);
+        return calendarioPersonal;
     }
 
     /// <summary>Registra una cuenta que todavía no pertenece a ningún equipo.</summary>
     public Colaborador RegistrarUsuario(string usuario, string contraseña)
     {
-        if (_usuariosIndependientes.Any(colaborador =>
-                colaborador.Usuario.Equals(usuario, StringComparison.OrdinalIgnoreCase)) ||
+        if (_colaboradorRepository is null)
+            throw new InvalidOperationException("Se requiere un repositorio de colaboradores para registrar usuarios.");
+
+        if (_colaboradorRepository.ExistePorUsuario(usuario) ||
             _equipoRepository.ObtenerTodos().Any(equipo => equipo.BuscarColaborador(usuario) is not null))
         {
             throw new InvalidOperationException($"El usuario '{usuario}' ya existe.");
         }
 
         var colaborador = new Colaborador(usuario, contraseña);
-        _usuariosIndependientes.Add(colaborador);
+        _colaboradorRepository.Agregar(colaborador, null);
         return colaborador;
     }
 }

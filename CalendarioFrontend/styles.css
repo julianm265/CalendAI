@@ -304,8 +304,8 @@ textarea { resize: vertical; min-height: 4.5rem; }
 .screen-login .card {
   position: relative;
   z-index: 1;
-  width: 460px;
-  padding: 48px 40px 32px;
+  width: min(380px, calc(100vw - 2rem));
+  padding: 38px 30px 28px;
   background: rgba(255,255,255,0.65);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -319,8 +319,8 @@ textarea { resize: vertical; min-height: 4.5rem; }
   align-items: center; 
   justify-content: center; 
   gap: 10px; 
-  margin-bottom: 24px; 
-  font-size: 26px; 
+  margin-bottom: 20px; 
+  font-size: 24px; 
   font-weight: 300; 
   letter-spacing: 4px; 
   color: #1a2a5a; 
@@ -334,7 +334,7 @@ textarea { resize: vertical; min-height: 4.5rem; }
 }
 
 .screen-login h1 { 
-  font-size: 28px; 
+  font-size: 25px; 
   font-weight: 600; 
   color: #1a2a5a; 
   text-align: center; 
@@ -344,7 +344,7 @@ textarea { resize: vertical; min-height: 4.5rem; }
   text-align: center; 
   color: #6b7a99; 
   font-size: 14px; 
-  margin: 8px 0 24px; 
+  margin: 8px 0 20px; 
 }
 
 .screen-login label { 
