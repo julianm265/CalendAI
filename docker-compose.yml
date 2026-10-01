@@ -7,7 +7,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-calendai_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en el archivo .env}
     volumes:
-      # Los datos viven en este volumen: sobreviven a "docker compose down".
       - calendai_postgres_data:/var/lib/postgresql/data
       - ./CalendarioBackend/database:/docker-entrypoint-initdb.d:ro
     healthcheck:
@@ -39,10 +38,14 @@ services:
       context: ./CalendarioFrontend
       dockerfile: Dockerfile
     container_name: calendai-frontend
+    # Desarrollo: los cambios en index.html, styles.css y los módulos JS se
+    # reflejan al refrescar el navegador, sin reconstruir la imagen.
+    volumes:
+      - ./CalendarioFrontend:/usr/share/nginx/html:ro
     depends_on:
       - backend
     ports:
-      - "3000:80"
+      - "5500:80"
     restart: unless-stopped
 
 volumes:
