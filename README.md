@@ -32,8 +32,6 @@ Sistema de gestión de calendarios, equipos y eventos impulsado por asistencia d
 Las pruebas unitarias y de integración se ejecutan localmente con un solo comando:
 **dotnet test**
 
-**NOTA: En el archivo .env cambiar la linea 3 o la contraseña de Postgres por "POSTGRES_PASSWORD=MiClaveSegura123"**
-
 **Nota: Asegúrate de ejecutar este comando estando dentro de la carpeta CalendarioBackend.**
 
 ### Nota sobre el uso de Inteligencia Artificial (IA)

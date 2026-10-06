@@ -144,3 +144,13 @@ usando el calendario gregoriano de .NET.
   negocio (año bisiesto, mes de 31 días, colisión de eventos a la misma hora, login inválido, etc.).
 - Sustituir `InMemoryEquipoRepository` por una implementación con Entity Framework Core
   y una base de datos relacional.
+
+
+## Importación de eventos desde documentos
+
+`POST /api/equipos/{id}/documentos/fechas?formatoFecha=auto|dmy|mdy` (PDF o .docx) devuelve, por cada evento detectado: fecha (y fecha fin si es un rango), nombre, lugar, hora, texto original, confianza y, si la fecha es ambigua, la lectura alternativa.
+
+- Formatos de fecha: `25/03/2026`, `25-03-26`, `2026-03-25`, `25 de marzo de 2026`, `25-mar-26`, `March 25th, 2026`, `del 5 al 7 de octubre`, etc.
+- El orden día/mes se deduce del documento (una fecha como 25/03 lo delata); si no hay evidencia se asume día/mes y se marca la fecha como ambigua. El usuario puede forzar el formato.
+- Un día de la semana junto a la fecha (`lunes 06/04/2026`) la desambigua; las fechas imposibles (31/04) se descartan.
+- La lógica vive en `CalendarioBackend.Core/Documents` y se prueba en `DocumentEventAnalyzerTests`.

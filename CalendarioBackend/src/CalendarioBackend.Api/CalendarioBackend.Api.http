@@ -4,3 +4,15 @@ GET {{CalendarioBackend.Api_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+### Extract dates from a PDF or Word document
+# Replace the path with a local .pdf or .docx file.
+POST {{CalendarioBackend.Api_HostAddress}}/api/equipos/00000000-0000-0000-0000-000000000000/documentos/fechas
+Content-Type: multipart/form-data; boundary=CalendaiBoundary
+
+--CalendaiBoundary
+Content-Disposition: form-data; name="file"; filename="agenda.docx"
+Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document
+
+< C:\ruta\a\agenda.docx
+--CalendaiBoundary--

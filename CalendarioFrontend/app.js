@@ -544,11 +544,156 @@ async function manejarSubmitEvento(event) {
       state.diaSeleccionado = fecha;
       await cargarMes();
     }
+
   } catch (error) {
     setFormError('evento-form-error', mensajeDeError(error));
   } finally {
     setButtonLoading(boton, false);
   }
+}
+
+async function manejarSubmitDocumento(event) {
+  event.preventDefault();
+  const input = qs('#document-file');
+  const archivo = input.files?.[0];
+  if (!archivo) {
+    setStatus('document-status', { error: 'Selecciona un archivo PDF o Word.' });
+    return;
+  }
+
+  const formato = qs('#document-date-format')?.value || 'auto';
+
+  setStatus('document-status', { loading: 'Leyendo el documento…' });
+  qs('#document-results').hidden = true;
+  const boton = qs('#submit-document');
+  setButtonLoading(boton, true, 'Buscando…');
+
+  try {
+    const respuesta = await api.extraerFechasDeDocumento(state.equipoActivo.id, archivo, formato);
+    renderResultadosDocumento(respuesta);
+    setStatus('document-status');
+  } catch (error) {
+    setStatus('document-status', { error: mensajeDeError(error) });
+  } finally {
+    setButtonLoading(boton, false);
+  }
+}
+
+/** Texto de aviso sobre cómo se interpretaron las fechas del documento. */
+function avisoDeFormato(respuesta, formatoElegido) {
+  const nombreFormato = respuesta.formatoFecha === 'mdy' ? 'mes/día/año' : 'día/mes/año';
+  if (respuesta.formatoMixto) {
+    return `Este documento mezcla formatos de fecha. Se usó ${nombreFormato} salvo cuando una fecha solo tiene sentido de otra forma (por ejemplo 25/03). Revisa las marcadas con ⚠.`;
+  }
+  if (respuesta.hayFechasAmbiguas && formatoElegido === 'auto') {
+    return `No hay forma de saber si el documento escribe día/mes o mes/día, así que se asumió ${nombreFormato}. Revisa las fechas marcadas con ⚠ o elige el formato arriba.`;
+  }
+  return '';
+}
+
+function renderResultadosDocumento(respuesta) {
+  // Tolera tanto la respuesta nueva ({ eventos, ... }) como una lista simple de fechas.
+  const datos = Array.isArray(respuesta) ? { eventos: respuesta } : (respuesta ?? {});
+  const eventos = Array.isArray(datos.eventos) ? datos.eventos : [];
+
+  const contenedor = qs('#document-results');
+  const lista = qs('#document-date-list');
+  const aviso = qs('#document-notice');
+  lista.innerHTML = '';
+  contenedor.hidden = false;
+
+  const textoAviso = avisoDeFormato(datos, qs('#document-date-format')?.value || 'auto');
+  aviso.textContent = textoAviso;
+  aviso.hidden = !textoAviso;
+
+  if (eventos.length === 0) {
+    lista.appendChild(ce('li', { class: 'document-empty' }, 'No se encontraron fechas reconocibles.'));
+    return;
+  }
+
+  for (const evento of eventos) lista.appendChild(crearFilaEventoDetectado(evento));
+}
+
+function crearFilaEventoDetectado(evento) {
+  const fecha = evento.fecha ?? evento.Fecha;
+  const fechaFin = evento.fechaFin ?? null;
+  const alternativa = evento.fechaAlternativa ?? null;
+  const nombre = evento.nombreEvento ?? evento.textoEncontrado ?? '';
+  const confianza = evento.confianza ?? 'media';
+
+  // Si la fecha es ambigua se deja elegir entre las dos lecturas posibles.
+  let selector = null;
+  if (evento.esAmbigua && alternativa) {
+    selector = ce('select', { class: 'document-date-select', 'aria-label': 'Fecha correcta' }, [
+      ce('option', { value: fecha }, formatearFechaLarga(fecha)),
+      ce('option', { value: alternativa }, formatearFechaLarga(alternativa)),
+    ]);
+  }
+
+  const detalles = [];
+  if (!selector) {
+    detalles.push(fechaFin
+      ? `${formatearFechaLarga(fecha)} → ${formatearFechaLarga(fechaFin)}`
+      : formatearFechaLarga(fecha));
+  }
+  detalles.push(evento.hora ? formatearHoraCorta(evento.hora) : 'Hora por definir');
+  detalles.push(evento.lugar || 'Lugar por definir');
+
+  const notas = [];
+  if (evento.fechaOriginal) notas.push(`Escrito como «${evento.fechaOriginal}»`);
+  if (evento.pagina) notas.push(`Página ${evento.pagina}`);
+  if (evento.anioInferido) notas.push('Año tomado del documento');
+
+  const copia = ce('div', { class: 'document-date-copy' }, [
+    ce('div', { class: 'document-date-title' }, [
+      ce('strong', {}, nombre),
+      ce('span', { class: `badge-confianza badge-confianza-${confianza}` }, `Confianza ${confianza}`),
+    ]),
+    selector,
+    ce('span', {}, detalles.join(' · ')),
+    evento.esAmbigua
+      ? ce('span', { class: 'document-warning' }, '⚠ Fecha ambigua: confirma cuál es la correcta antes de crear el evento.')
+      : null,
+    ce('span', { class: 'document-note' }, notas.join(' · ')),
+  ]);
+
+  return ce('li', { class: 'document-date-row' }, [
+    copia,
+    ce('button', {
+      class: 'btn btn-primary',
+      type: 'button',
+      onClick: () => usarEventoDetectado(evento, selector ? selector.value : fecha),
+    }, 'Crear evento'),
+  ]);
+}
+
+/** Primera hora libre (desde las 09:00) para ese día, ya que no se permiten dos eventos a la misma hora. */
+async function horaLibre(fecha) {
+  try {
+    const existentes = await api.obtenerEventosDelDia(state.equipoActivo.id, fecha);
+    const ocupadas = new Set((existentes ?? []).map((e) => formatearHoraCorta(normalizarEvento(e).hora)));
+    for (let h = 9; h <= 22; h++) {
+      const candidata = `${String(h).padStart(2, '0')}:00`;
+      if (!ocupadas.has(candidata)) return candidata;
+    }
+  } catch {
+    // Si no se puede consultar, se propone la hora por defecto y la API avisará si choca.
+  }
+  return '09:00';
+}
+
+async function usarEventoDetectado(evento, fecha) {
+  abrirDrawerEvento();
+  qs('#evento-fecha').value = fecha;
+  qs('#evento-nombre').value = (evento.nombreEvento ?? '').slice(0, 120);
+  qs('#evento-lugar').value = (evento.lugar || 'Por definir').slice(0, 120);
+
+  const partes = ['Evento importado desde un documento.'];
+  if (evento.fechaFin) partes.push(`Se extiende hasta el ${formatearFechaLarga(evento.fechaFin)}.`);
+  if (evento.textoEncontrado) partes.push(`Texto original: «${evento.textoEncontrado}»`);
+  qs('#evento-descripcion').value = partes.join(' ').slice(0, 500);
+
+  qs('#evento-hora').value = evento.hora || await horaLibre(fecha);
 }
 
 /* ============================== DRAWER: colaboradores ============================== */
@@ -651,6 +796,7 @@ function inicializar() {
   if (qs('#cancel-event')) qs('#cancel-event').addEventListener('click', cerrarDrawerEvento);
   if (qs('#event-drawer-backdrop')) qs('#event-drawer-backdrop').addEventListener('click', cerrarDrawerEvento);
   if (qs('#form-evento')) qs('#form-evento').addEventListener('submit', manejarSubmitEvento);
+  if (qs('#form-documento')) qs('#form-documento').addEventListener('submit', manejarSubmitDocumento);
   if (qs('#close-collab-drawer')) qs('#close-collab-drawer').addEventListener('click', cerrarColaboradores);
   if (qs('#collab-drawer-backdrop')) qs('#collab-drawer-backdrop').addEventListener('click', cerrarColaboradores);
   if (qs('#form-colaborador')) qs('#form-colaborador').addEventListener('submit', manejarSubmitColaborador);

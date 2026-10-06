@@ -560,6 +560,132 @@ main#main {
   align-items: start;
 }
 
+.document-import {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px solid var(--line, #dce5e8);
+  border-radius: 1rem;
+  background: var(--surface, #fff);
+}
+
+.document-import-copy h2,
+.document-results h3 {
+  margin: 0 0 .35rem;
+  font-size: 1.05rem;
+}
+
+.document-import-copy p {
+  margin: 0;
+  color: var(--muted, #617078);
+}
+
+.document-import-form {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.file-input-label {
+  display: grid;
+  gap: .35rem;
+  font-weight: 600;
+}
+
+.document-import-form input[type="file"] {
+  min-width: min(100%, 22rem);
+}
+
+.document-results {
+  display: grid;
+  gap: .75rem;
+}
+
+.document-date-list {
+  display: grid;
+  gap: .6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.document-date-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .75rem;
+  border-radius: .75rem;
+  background: #f6f9fa;
+}
+
+.document-date-copy {
+  display: grid;
+  gap: .2rem;
+  min-width: 0;
+}
+
+.document-date-copy span {
+  overflow: hidden;
+  color: var(--muted, #617078);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-empty {
+  color: var(--muted, #617078);
+}
+
+.document-notice {
+  margin: 0;
+  padding: .6rem .8rem;
+  border-radius: .6rem;
+  background: var(--color-ochre-tint);
+  color: var(--color-ink);
+  font-size: .9rem;
+}
+
+.document-import-form select,
+.document-date-select {
+  padding: .45rem .6rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: .5rem;
+  background: var(--color-surface);
+  font: inherit;
+}
+
+.document-date-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+}
+
+.document-date-copy .document-warning {
+  color: var(--color-brick-deep);
+  white-space: normal;
+  font-weight: 600;
+}
+
+.document-date-copy .document-note {
+  font-size: .8rem;
+  color: var(--color-ink-faint);
+}
+
+.badge-confianza {
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-confianza-alta { background: var(--color-forest-tint); color: var(--color-forest-deep); }
+.badge-confianza-media { background: var(--color-ochre-tint); color: var(--color-ink); }
+.badge-confianza-baja { background: var(--color-brick-tint); color: var(--color-brick-deep); }
+
 .calendar-grid-wrap {
   background: var(--color-surface);
   border: 1px solid var(--color-line);

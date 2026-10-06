@@ -56,10 +56,13 @@ async function leerCuerpoDeError(response) {
 async function apiFetch(path, options = {}) {
   let response;
   try {
+    const isFormData = options.body instanceof FormData;
     response = await fetch(`${API_BASE_URL}${path}`, {
       credentials: 'include',
       ...options,
-      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      headers: isFormData
+        ? (options.headers || {})
+        : { 'Content-Type': 'application/json', ...(options.headers || {}) },
     });
   } catch {
     throw new ApiError(
@@ -147,5 +150,23 @@ export function eliminarEvento(equipoId, eventoId, fecha) {
   return apiFetch(
     `/equipos/${encodeURIComponent(equipoId)}/eventos/${encodeURIComponent(eventoId)}?fecha=${encodeURIComponent(fecha)}`,
     { method: 'DELETE' },
+  );
+}
+
+/**
+ * Sube un PDF/Word y devuelve { eventos, formatoFecha, formatoMixto, hayFechasAmbiguas }.
+ * formatoFecha: 'auto' (se deduce del documento), 'dmy' (día/mes/año) o 'mdy' (mes/día/año).
+ */
+export function extraerFechasDeDocumento(equipoId, archivo, formatoFecha = 'auto') {
+  const datos = new FormData();
+  datos.append('file', archivo);
+
+  return apiFetch(
+    `/equipos/${encodeURIComponent(equipoId)}/documentos/fechas?formatoFecha=${encodeURIComponent(formatoFecha)}`,
+    {
+      method: 'POST',
+      body: datos,
+      headers: {},
+    },
   );
 }

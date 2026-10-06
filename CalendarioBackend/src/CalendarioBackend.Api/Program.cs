@@ -3,6 +3,7 @@ using CalendarioBackend.Core.Persistence;
 using CalendarioBackend.Core.Services;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
+using CalendarioBackend.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,7 @@ builder.Services.AddScoped<IColaboradorRepository, PostgresColaboradorRepository
 builder.Services.AddScoped<EquipoService>();
 builder.Services.AddScoped<CalendarioService>();
 builder.Services.AddScoped<AutenticacionService>();
+builder.Services.AddSingleton<IDocumentDateExtractionService, DocumentDateExtractionService>();
 
 var app = builder.Build();
 
