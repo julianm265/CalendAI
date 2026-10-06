@@ -23,6 +23,30 @@
         <div class="month-nav"><button type="button" class="icon-btn" id="prev-month" aria-label="Mes anterior">‹</button><h1 id="month-label" class="month-label" aria-live="polite"></h1><button type="button" class="icon-btn" id="next-month" aria-label="Mes siguiente">›</button></div>
         <button type="button" class="btn btn-primary" id="open-new-event">+ Nuevo evento</button>
       </div>
+      <section class="document-import" aria-labelledby="document-import-title">
+        <div class="document-import-copy">
+          <h2 id="document-import-title">Importar fechas desde un documento</h2>
+          <p>Sube un PDF o Word (.docx): detectamos fecha, nombre, lugar y hora de cada evento para que los conviertas en un clic.</p>
+        </div>
+        <form id="form-documento" class="document-import-form">
+          <label class="file-input-label" for="document-file">PDF o Word</label>
+          <input id="document-file" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+          <label class="file-input-label" for="document-date-format">Formato de fechas
+            <select id="document-date-format">
+              <option value="auto" selected>Detectar automáticamente</option>
+              <option value="dmy">Día/Mes/Año (05/10/2026 = 5 de octubre)</option>
+              <option value="mdy">Mes/Día/Año (05/10/2026 = 10 de mayo)</option>
+            </select>
+          </label>
+          <button type="submit" class="btn btn-secondary" id="submit-document">Buscar eventos</button>
+        </form>
+        <div id="document-status" class="status-block" hidden></div>
+        <div id="document-results" class="document-results" hidden>
+          <h3>Eventos encontrados</h3>
+          <p id="document-notice" class="document-notice" hidden></p>
+          <ul id="document-date-list" class="document-date-list"></ul>
+        </div>
+      </section>
       <div id="calendar-status" class="status-block" hidden></div>
       <div class="calendar-layout">
         <div class="calendar-grid-wrap"><div class="weekday-row"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="calendar-grid" class="calendar-grid" role="grid" aria-label="Días del mes"></div></div>

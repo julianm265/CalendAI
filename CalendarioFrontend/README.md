@@ -156,6 +156,12 @@ mostrar datos simulados.
    eventos con confirmación previa.
 4. **Colaboradores**: panel lateral accesible desde la barra superior para ver
    y agregar colaboradores del equipo activo (`POST /colaboradores`).
+5. **Importar fechas**: desde el calendario se puede subir un PDF o Word
+   `.docx` de hasta 10 MB. El backend extrae fechas numéricas
+   (`dd/mm/yyyy`, `yyyy-mm-dd`, etc.) y fechas escritas en español, muestra el
+   contexto encontrado y permite crear un evento a partir de cada resultado.
+   Los archivos no se guardan. Los PDF escaneados como imagen requieren OCR y
+   no se detectan automáticamente.
 
 La sesión (`colaborador`) y el equipo activo se guardan en
 `sessionStorage` para sobrevivir recargas de la página, **pero no son un

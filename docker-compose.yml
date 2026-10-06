@@ -1,4 +1,4 @@
-services:
+﻿services:
   postgres:
     image: postgres:16
     container_name: calendai-postgres
@@ -25,7 +25,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Calendai: Host=postgres;Port=5432;Database=${POSTGRES_DB:-calendai};Username=${POSTGRES_USER:-calendai_user};Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en el archivo .env}
+      ConnectionStrings__Calendai: Host=postgres;Port=5432;Database=${POSTGRES_DB:-calendai};Username=${POSTGRES_USER:-calendai_user};Password=${POSTGRES_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,8 +38,6 @@ services:
       context: ./CalendarioFrontend
       dockerfile: Dockerfile
     container_name: calendai-frontend
-    # Desarrollo: los cambios en index.html, styles.css y los módulos JS se
-    # reflejan al refrescar el navegador, sin reconstruir la imagen.
     volumes:
       - ./CalendarioFrontend:/usr/share/nginx/html:ro
     depends_on:
