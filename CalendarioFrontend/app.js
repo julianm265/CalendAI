@@ -473,6 +473,67 @@ async function manejarMesSiguiente() {
 
 /* ============================== DRAWER: nuevo evento ============================== */
 
+let temporizadorBusquedaLugar = null;
+let numeroSolicitudLugar = 0;
+
+function ocultarSugerenciasLugares() {
+  const lista = qs('#evento-lugar-sugerencias');
+  if (!lista) return;
+  lista.hidden = true;
+  lista.innerHTML = '';
+  qs('#evento-lugar')?.setAttribute('aria-expanded', 'false');
+}
+
+function seleccionarLugar(lugar) {
+  qs('#evento-lugar').value = lugar;
+  ocultarSugerenciasLugares();
+}
+
+function renderSugerenciasLugares(lugares, mensaje = '') {
+  const lista = qs('#evento-lugar-sugerencias');
+  if (!lista) return;
+  lista.innerHTML = '';
+  for (const item of Array.isArray(lugares) ? lugares : []) {
+    const nombre = item.nombre || item.lugar || '';
+    const direccion = item.direccion || (item.vecesUsado ? `Usado ${item.vecesUsado} ${item.vecesUsado === 1 ? 'vez' : 'veces'}` : '');
+    if (!nombre) continue;
+    lista.appendChild(ce('li', { class: 'place-suggestion', role: 'option' }, [
+      ce('button', { type: 'button', onClick: () => seleccionarLugar(item.direccion ? `${nombre}, ${direccion}` : nombre) }, [
+        ce('span', { class: 'place-suggestion-name' }, nombre),
+        ce('span', { class: 'place-suggestion-meta' }, direccion),
+      ]),
+    ]));
+  }
+  if (lista.children.length === 0 && mensaje) {
+    lista.appendChild(ce('li', { class: 'place-suggestion-message' }, mensaje));
+  }
+  lista.hidden = lista.children.length === 0;
+  qs('#evento-lugar')?.setAttribute('aria-expanded', String(!lista.hidden));
+}
+
+async function cargarSugerenciasLugares(consulta = '') {
+  const solicitud = ++numeroSolicitudLugar;
+  try {
+    const lugares = consulta.trim().length >= 2
+      ? await api.buscarLugares(consulta.trim())
+      : await api.obtenerLugaresPreferidos(state.equipoActivo.id);
+    if (solicitud !== numeroSolicitudLugar) return;
+    renderSugerenciasLugares(
+      lugares,
+      consulta.trim() ? 'No encontramos resultados. Revisa el texto e inténtalo de nuevo.' : 'Todavía no hay lugares frecuentes. Escribe un lugar para buscarlo.',
+    );
+  } catch (error) {
+    if (solicitud === numeroSolicitudLugar) {
+      renderSugerenciasLugares([], mensajeDeError(error));
+    }
+  }
+}
+
+function manejarEntradaLugar(event) {
+  clearTimeout(temporizadorBusquedaLugar);
+  temporizadorBusquedaLugar = setTimeout(() => cargarSugerenciasLugares(event.target.value), 250);
+}
+
 function poblarSelectOrganizador() {
   const select = qs('#evento-organizador');
   select.innerHTML = '';
@@ -493,10 +554,12 @@ function abrirDrawerEvento() {
   qs('#evento-fecha').value = state.diaSeleccionado || fechaHoyIso();
 
   openDrawer('event-drawer', 'event-drawer-backdrop');
+  cargarSugerenciasLugares();
 }
 
 function cerrarDrawerEvento() {
   closeDrawer('event-drawer', 'event-drawer-backdrop');
+  ocultarSugerenciasLugares();
 }
 
 async function manejarSubmitEvento(event) {
@@ -796,6 +859,10 @@ function inicializar() {
   if (qs('#cancel-event')) qs('#cancel-event').addEventListener('click', cerrarDrawerEvento);
   if (qs('#event-drawer-backdrop')) qs('#event-drawer-backdrop').addEventListener('click', cerrarDrawerEvento);
   if (qs('#form-evento')) qs('#form-evento').addEventListener('submit', manejarSubmitEvento);
+  if (qs('#evento-lugar')) {
+    qs('#evento-lugar').addEventListener('input', manejarEntradaLugar);
+    qs('#evento-lugar').addEventListener('focus', () => cargarSugerenciasLugares(qs('#evento-lugar').value));
+  }
   if (qs('#form-documento')) qs('#form-documento').addEventListener('submit', manejarSubmitDocumento);
   if (qs('#close-collab-drawer')) qs('#close-collab-drawer').addEventListener('click', cerrarColaboradores);
   if (qs('#collab-drawer-backdrop')) qs('#collab-drawer-backdrop').addEventListener('click', cerrarColaboradores);

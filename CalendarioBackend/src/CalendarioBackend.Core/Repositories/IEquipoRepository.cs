@@ -15,9 +15,12 @@ public interface IEquipoRepository
     void EliminarColaborador(Guid equipoId, Guid colaboradorId);
     void AgregarEvento(Guid equipoId, DateOnly fecha, Evento evento);
     void EliminarEvento(Guid equipoId, Guid eventoId);
+    IReadOnlyList<LugarFrecuente> ObtenerLugaresFrecuentes(Guid equipoId, int limite);
     Equipo? ObtenerPorId(Guid id);
     Equipo? ObtenerPorNombre(string nombre);
     IReadOnlyList<Equipo> ObtenerTodos();
     bool Eliminar(Guid id);
     Equipo CrearCalendarioPersonal(Colaborador colaborador);
 }
+
+public sealed record LugarFrecuente(string Lugar, int VecesUsado);

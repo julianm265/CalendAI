@@ -31,6 +31,11 @@ builder.Services.AddScoped<EquipoService>();
 builder.Services.AddScoped<CalendarioService>();
 builder.Services.AddScoped<AutenticacionService>();
 builder.Services.AddSingleton<IDocumentDateExtractionService, DocumentDateExtractionService>();
+builder.Services.AddHttpClient("GooglePlaces", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(8);
+});
+builder.Services.AddScoped<IGooglePlacesService, GooglePlacesService>();
 
 var app = builder.Build();
 

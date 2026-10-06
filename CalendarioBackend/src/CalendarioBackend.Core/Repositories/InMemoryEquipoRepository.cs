@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Globalization;
+using System.Text;
 using CalendarioBackend.Core.Models;
 
 namespace CalendarioBackend.Core.Repositories;
@@ -51,6 +53,25 @@ public class InMemoryEquipoRepository : IEquipoRepository
                             return;
     }
 
+    public IReadOnlyList<LugarFrecuente> ObtenerLugaresFrecuentes(Guid equipoId, int limite)
+    {
+        var lugares = EnumerarEventos(ObtenerEquipoOFallar(equipoId))
+            .Select(item => item.LugarEvento)
+            .Where(lugar => !string.IsNullOrWhiteSpace(lugar))
+            .Select(lugar => new { Original = lugar!.Trim(), Clave = NormalizarLugar(lugar) })
+            .Where(lugar => lugar.Clave.Length > 0)
+            .GroupBy(lugar => lugar.Clave)
+            .OrderByDescending(grupo => grupo.Count())
+            .ThenBy(grupo => grupo.Min(item => item.Original), StringComparer.OrdinalIgnoreCase)
+            .Take(limite)
+            .Select(grupo => new LugarFrecuente(
+                grupo.OrderBy(item => item.Original.Length).First().Original,
+                grupo.Count()))
+            .ToList();
+
+        return lugares;
+    }
+
     public Equipo? ObtenerPorId(Guid id) =>
         _equipos.TryGetValue(id, out var equipo) ? equipo : null;
 
@@ -70,5 +91,27 @@ public class InMemoryEquipoRepository : IEquipoRepository
         equipo.AgregarColaborador(colaborador);
         Agregar(equipo);
         return equipo;
+    }
+
+    private static IEnumerable<Evento> EnumerarEventos(Equipo equipo) =>
+        from año in equipo.Calendario.LAños
+        from mes in año.LMeses
+        from semana in mes.LSemana
+        from dia in semana.LDias
+        from evento in dia.LEventos
+        select evento;
+
+    private static string NormalizarLugar(string lugar)
+    {
+        var descompuesto = lugar.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder();
+        foreach (var caracter in descompuesto)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(caracter) != UnicodeCategory.NonSpacingMark)
+                builder.Append(caracter);
+        }
+
+        return string.Join(' ', builder.ToString().Normalize(NormalizationForm.FormC)
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     }
 }

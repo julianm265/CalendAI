@@ -5,6 +5,7 @@
 // parseado (o lanza ApiError si algo falla).
 
 export const API_BASE_URL = '/api';
+const API_FALLBACK_URL = 'http://localhost:5080/api';
 
 /** Error enriquecido con el código de estado HTTP (0 = fallo de red/CORS). */
 export class ApiError extends Error {
@@ -54,21 +55,31 @@ async function leerCuerpoDeError(response) {
 
 /** Envoltorio central de fetch: arma la URL, maneja errores de red, HTTP y JSON vacío. */
 async function apiFetch(path, options = {}) {
+  const urls = [API_BASE_URL];
+  if (window.location.hostname === 'localhost' && window.location.port !== '5080') {
+    urls.push(API_FALLBACK_URL);
+  }
+
+  const isFormData = options.body instanceof FormData;
   let response;
-  try {
-    const isFormData = options.body instanceof FormData;
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      credentials: 'include',
-      ...options,
-      headers: isFormData
-        ? (options.headers || {})
-        : { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    });
-  } catch {
-    throw new ApiError(
-      0,
-      `No se pudo conectar con la API en ${API_BASE_URL}. Verifica que esté corriendo y que CORS esté habilitado.`,
-    );
+  for (const baseUrl of urls) {
+    try {
+      response = await fetch(`${baseUrl}${path}`, {
+        credentials: 'include',
+        ...options,
+        headers: isFormData
+          ? (options.headers || {})
+          : { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      });
+      break;
+    } catch {
+      if (baseUrl === urls[urls.length - 1]) {
+        throw new ApiError(
+          0,
+          `No se pudo conectar con la API en ${API_BASE_URL} ni en ${API_FALLBACK_URL}. Verifica que esté corriendo y que CORS esté habilitado.`,
+        );
+      }
+    }
   }
 
   if (!response.ok) {
@@ -151,6 +162,14 @@ export function eliminarEvento(equipoId, eventoId, fecha) {
     `/equipos/${encodeURIComponent(equipoId)}/eventos/${encodeURIComponent(eventoId)}?fecha=${encodeURIComponent(fecha)}`,
     { method: 'DELETE' },
   );
+}
+
+export function buscarLugares(query) {
+  return apiFetch(`/lugares/buscar?query=${encodeURIComponent(query)}`);
+}
+
+export function obtenerLugaresPreferidos(equipoId, limite = 8) {
+  return apiFetch(`/equipos/${encodeURIComponent(equipoId)}/lugares/preferidos?limite=${limite}`);
 }
 
 /**
