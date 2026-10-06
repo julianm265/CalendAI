@@ -1,3 +1,4 @@
+using CalendarioBackend.Core.Models;
 using CalendarioBackend.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,21 +16,25 @@ public class EquiposController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IReadOnlyList<EquipoResumen>> Listar()
+    public ActionResult<IReadOnlyList<EquipoResumen>> Listar([FromQuery] string? usuario)
     {
-        var equipos = _equipoService.ListarEquipos()
+        if (string.IsNullOrWhiteSpace(usuario))
+            return BadRequest(new { error = "El nombre de usuario es obligatorio para listar equipos." });
+
+        var equipos = _equipoService.ListarEquipos(usuario)
             .Select(equipo => new EquipoResumen(
                 equipo.Id,
                 equipo.NombreEquipo,
                 equipo.LColaboradores.Count,
-                equipo.EsPersonal))
+                equipo.EsPersonal,
+                RolUsuario(equipo, usuario)))
             .ToList();
 
         return Ok(equipos);
     }
 
     [HttpGet("{id:guid}")]
-    public ActionResult<EquipoDetalle> Obtener(Guid id)
+    public ActionResult<EquipoDetalle> Obtener(Guid id, [FromQuery] string? usuario)
     {
         try
         {
@@ -38,9 +43,13 @@ public class EquiposController : ControllerBase
                 equipo.Id,
                 equipo.NombreEquipo,
                 equipo.LColaboradores
-                    .Select(colaborador => new ColaboradorResumen(colaborador.Id, colaborador.Usuario))
+                    .Select(colaborador => new ColaboradorResumen(
+                        colaborador.Id,
+                        colaborador.Usuario,
+                        equipo.ObtenerRolColaborador(colaborador.Id)))
                     .ToList(),
-                equipo.EsPersonal));
+                equipo.EsPersonal,
+                RolUsuario(equipo, usuario)));
         }
         catch (KeyNotFoundException)
         {
@@ -49,13 +58,20 @@ public class EquiposController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<EquipoResumen> Crear(CrearEquipoRequest request)
+    public ActionResult<EquipoDetalle> Crear(CreateTeamDto request)
     {
         try
         {
-            var equipo = _equipoService.CrearEquipo(request.NombreEquipo);
-            var resumen = new EquipoResumen(equipo.Id, equipo.NombreEquipo, 0, false);
-            return CreatedAtAction(nameof(Obtener), new { id = equipo.Id }, resumen);
+            var equipo = _equipoService.CrearEquipo(request.NombreEquipo, request.Usuario);
+            var detalle = CrearDetalle(equipo, request.Usuario);
+            return CreatedAtAction(
+                nameof(Obtener),
+                new { id = equipo.Id, usuario = request.Usuario },
+                detalle);
+        }
+        catch (KeyNotFoundException exception)
+        {
+            return NotFound(new { error = exception.Message });
         }
         catch (ArgumentException exception)
         {
@@ -68,14 +84,14 @@ public class EquiposController : ControllerBase
     }
 
     [HttpPost("{id:guid}/colaboradores")]
-    public ActionResult<ColaboradorResumen> RegistrarColaborador(
+    public ActionResult<ColaboradorResumen> AgregarMiembro(
         Guid id,
-        RegistrarColaboradorRequest request)
+        AddMemberDto request)
     {
         try
         {
-            var colaborador = _equipoService.RegistrarColaborador(id, request.Usuario, request.Contraseña);
-            return Ok(new ColaboradorResumen(colaborador.Id, colaborador.Usuario));
+            var colaborador = _equipoService.AgregarMiembro(id, request.Usuario);
+            return Ok(new ColaboradorResumen(colaborador.Id, colaborador.Usuario, "Miembro"));
         }
         catch (KeyNotFoundException)
         {
@@ -90,10 +106,52 @@ public class EquiposController : ControllerBase
             return Conflict(new { error = exception.Message });
         }
     }
+
+    [HttpDelete("{id:guid}/colaboradores/{colaboradorId:guid}")]
+    public IActionResult EliminarMiembro(Guid id, Guid colaboradorId)
+    {
+        try
+        {
+            _equipoService.EliminarColaborador(id, colaboradorId);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException exception)
+        {
+            return Conflict(new { error = exception.Message });
+        }
+    }
+
+    private static string? RolUsuario(Equipo equipo, string? usuario)
+    {
+        var miembro = string.IsNullOrWhiteSpace(usuario) ? null : equipo.BuscarColaborador(usuario);
+        return miembro is null ? null : equipo.ObtenerRolColaborador(miembro.Id);
+    }
+
+    private static EquipoDetalle CrearDetalle(Equipo equipo, string? usuario) =>
+        new(
+            equipo.Id,
+            equipo.NombreEquipo,
+            equipo.LColaboradores
+                .Select(colaborador => new ColaboradorResumen(
+                    colaborador.Id,
+                    colaborador.Usuario,
+                    equipo.ObtenerRolColaborador(colaborador.Id)))
+                .ToList(),
+            equipo.EsPersonal,
+            RolUsuario(equipo, usuario));
 }
 
-public sealed record CrearEquipoRequest(string NombreEquipo);
-public sealed record RegistrarColaboradorRequest(string Usuario, string Contraseña);
-public sealed record EquipoResumen(Guid Id, string Nombre, int Colaboradores, bool EsPersonal);
-public sealed record EquipoDetalle(Guid Id, string Nombre, IReadOnlyList<ColaboradorResumen> Colaboradores, bool EsPersonal);
-public sealed record ColaboradorResumen(Guid Id, string Usuario);
+public sealed record CreateTeamDto(string NombreEquipo, string Usuario);
+public sealed record AddMemberDto(string Usuario);
+public sealed record EquipoResumen(Guid Id, string Nombre, int Colaboradores, bool EsPersonal, string? RolUsuario);
+public sealed record EquipoDetalle(
+    Guid Id,
+    string Nombre,
+    IReadOnlyList<ColaboradorResumen> Colaboradores,
+    bool EsPersonal,
+    string? RolUsuario);
+public sealed record ColaboradorResumen(Guid Id, string Usuario, string Rol = "Miembro");

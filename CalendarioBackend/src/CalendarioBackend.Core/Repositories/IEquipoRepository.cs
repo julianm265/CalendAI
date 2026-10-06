@@ -10,8 +10,9 @@ namespace CalendarioBackend.Core.Repositories;
 public interface IEquipoRepository
 {
     Equipo Agregar(Equipo equipo);
+    Equipo AgregarEquipoConColaborador(Equipo equipo, Colaborador colaborador, string rol);
     void Guardar(Equipo equipo);
-    void AgregarColaborador(Guid equipoId, Colaborador colaborador);
+    void AgregarColaborador(Guid equipoId, Colaborador colaborador, string rol = "Miembro");
     void EliminarColaborador(Guid equipoId, Guid colaboradorId);
     void AgregarEvento(Guid equipoId, DateOnly fecha, Evento evento);
     void EliminarEvento(Guid equipoId, Guid eventoId);

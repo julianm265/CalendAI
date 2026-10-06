@@ -33,8 +33,13 @@ function escribirJson(key, value) {
 
 export const state = {
   colaborador: leerJson(STORAGE_KEYS.colaborador), // { id, usuario } | null
+  get currentUser() {
+    return this.colaborador?.usuario || '';
+  },
   equipoActivo: leerJson(STORAGE_KEYS.equipoActivo), // { id, nombreEquipo } | null
   equipoActivoDetalle: null, // equipo completo con colaboradores, refrescado al entrar al calendario
+  calendarioPersonal: null,
+  equiposDisponibles: [],
   vista: { año: null, mes: null }, // mes visible actualmente en el calendario (mes: 1-12)
   diaSeleccionado: null, // 'YYYY-MM-DD'
   eventosDelMes: new Map(), // 'YYYY-MM-DD' -> cantidad de eventos (para los puntos en la cuadrícula)
@@ -54,6 +59,8 @@ export function cerrarSesion() {
   state.colaborador = null;
   state.equipoActivo = null;
   state.equipoActivoDetalle = null;
+  state.calendarioPersonal = null;
+  state.equiposDisponibles = [];
   escribirJson(STORAGE_KEYS.colaborador, null);
   escribirJson(STORAGE_KEYS.equipoActivo, null);
 }

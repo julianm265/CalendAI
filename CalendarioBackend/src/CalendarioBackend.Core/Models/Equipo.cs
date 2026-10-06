@@ -13,6 +13,7 @@ public class Equipo
     public bool EsPersonal { get; }
 
     private readonly List<Colaborador> _colaboradores = new();
+    private readonly Dictionary<Guid, string> _rolesColaboradores = new();
     public IReadOnlyList<Colaborador> LColaboradores => _colaboradores.AsReadOnly();
 
     public Equipo(string nombreEquipo, bool esPersonal = false)
@@ -34,20 +35,27 @@ public class Equipo
         EsPersonal = esPersonal;
     }
 
-    public void AgregarColaborador(Colaborador colaborador)
+    public void AgregarColaborador(Colaborador colaborador, string rol = "Miembro")
     {
         if (_colaboradores.Any(c => c.Usuario.Equals(colaborador.Usuario, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException($"El colaborador '{colaborador.Usuario}' ya pertenece al equipo.");
 
         _colaboradores.Add(colaborador);
+        _rolesColaboradores[colaborador.Id] = rol;
     }
 
-    public bool EliminarColaborador(Guid colaboradorId) =>
-        _colaboradores.RemoveAll(c => c.Id == colaboradorId) > 0;
+    public bool EliminarColaborador(Guid colaboradorId)
+    {
+        _rolesColaboradores.Remove(colaboradorId);
+        return _colaboradores.RemoveAll(c => c.Id == colaboradorId) > 0;
+    }
 
     public Colaborador? BuscarColaborador(string usuario) =>
         _colaboradores.FirstOrDefault(c => c.Usuario.Equals(usuario, StringComparison.OrdinalIgnoreCase));
 
     public Colaborador? BuscarColaborador(Guid colaboradorId) =>
         _colaboradores.FirstOrDefault(c => c.Id == colaboradorId);
+
+    public string ObtenerRolColaborador(Guid colaboradorId) =>
+        _rolesColaboradores.TryGetValue(colaboradorId, out var rol) ? rol : "Miembro";
 }

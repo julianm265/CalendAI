@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body class="calendar-page">
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -15,46 +15,103 @@
 <div id="screen-app" class="screen screen-app">
   <header class="topbar">
     <div class="topbar-brand"><span class="topbar-brand-mark">CalendAI</span></div>
+    <div id="calendar-context-controls" class="calendar-context-controls" aria-label="Contexto del calendario"></div>
     <nav class="topbar-actions" id="topbar-actions" aria-label="Acciones de cuenta"></nav>
   </header>
-  <main id="main">
-    <section id="view-calendar" class="view">
-      <div class="calendar-toolbar">
-        <div class="month-nav"><button type="button" class="icon-btn" id="prev-month" aria-label="Mes anterior">‹</button><h1 id="month-label" class="month-label" aria-live="polite"></h1><button type="button" class="icon-btn" id="next-month" aria-label="Mes siguiente">›</button></div>
-        <button type="button" class="btn btn-primary" id="open-new-event">+ Nuevo evento</button>
-      </div>
-      <section class="document-import" aria-labelledby="document-import-title">
-        <div class="document-import-copy">
-          <h2 id="document-import-title">Importar fechas desde un documento</h2>
-          <p>Sube un PDF o Word (.docx): detectamos fecha, nombre, lugar y hora de cada evento para que los conviertas en un clic.</p>
+  <section id="view-calendar" class="view">
+    <div class="calendar-layout">
+      <aside class="calendar-sidebar" aria-label="Navegación del calendario">
+        <section class="sidebar-card mini-calendar-card" aria-label="Calendario mensual">
+          <div class="mini-header">
+            <button type="button" class="icon-btn" id="prev-month" aria-label="Mes anterior">‹</button>
+            <h1 id="month-label" class="month-label" aria-live="polite"></h1>
+            <button type="button" class="icon-btn" id="next-month" aria-label="Mes siguiente">›</button>
+          </div>
+          <div class="weekday-row mini-weekday-row" aria-hidden="true"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div>
+          <div id="calendar-grid" class="calendar-grid mini-grid" role="grid" aria-label="Días del mes"></div>
+        </section>
+        <section class="sidebar-card import-shortcut-card" aria-label="Importar eventos">
+          <h2>¿Tienes fechas en un documento?</h2>
+          <p>Detecta eventos desde un PDF o Word.</p>
+          <button type="button" class="btn btn-secondary" id="open-document-modal">Importar documento</button>
+        </section>
+      </aside>
+      <main id="main" class="day-panel main-card">
+        <div class="calendar-toolbar">
+          <div>
+            <p class="calendar-eyebrow">Tu agenda</p>
+            <h2 id="day-panel-title">Selecciona un día</h2>
+          </div>
+          <div class="calendar-toolbar-actions">
+            <button type="button" class="btn btn-secondary" id="open-document-modal-main">Importar documento</button>
+            <button type="button" class="btn btn-primary" id="open-new-event">+ Nuevo evento</button>
+          </div>
         </div>
-        <form id="form-documento" class="document-import-form">
-          <label class="file-input-label" for="document-file">PDF o Word</label>
-          <input id="document-file" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
-          <label class="file-input-label" for="document-date-format">Formato de fechas
-            <select id="document-date-format">
-              <option value="auto" selected>Detectar automáticamente</option>
-              <option value="dmy">Día/Mes/Año (05/10/2026 = 5 de octubre)</option>
-              <option value="mdy">Mes/Día/Año (05/10/2026 = 10 de mayo)</option>
-            </select>
-          </label>
-          <button type="submit" class="btn btn-secondary" id="submit-document">Buscar eventos</button>
-        </form>
-        <div id="document-status" class="status-block" hidden></div>
-        <div id="document-results" class="document-results" hidden>
-          <h3>Eventos encontrados</h3>
-          <p id="document-notice" class="document-notice" hidden></p>
-          <ul id="document-date-list" class="document-date-list"></ul>
-        </div>
-      </section>
-      <div id="calendar-status" class="status-block" hidden></div>
-      <div class="calendar-layout">
-        <div class="calendar-grid-wrap"><div class="weekday-row"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="calendar-grid" class="calendar-grid" role="grid" aria-label="Días del mes"></div></div>
-        <aside id="day-panel" class="day-panel" aria-live="polite"><h2 id="day-panel-title">Selecciona un día</h2><div id="day-panel-status" class="status-block" hidden></div><ul id="day-events-list" class="events-list"></ul><button type="button" class="btn btn-secondary" id="open-new-event-day" hidden>+ Agregar evento este día</button></aside>
-      </div>
-    </section>
-  </main>
+        <div id="calendar-status" class="status-block" hidden></div>
+        <div id="day-panel-status" class="status-block" hidden></div>
+        <ul id="day-events-list" class="events-list"></ul>
+        <button type="button" class="btn btn-secondary" id="open-new-event-day" hidden>+ Agregar evento este día</button>
+      </main>
+    </div>
+  </section>
 </div>
+<div class="document-modal-backdrop" id="document-modal-backdrop" hidden></div>
+<section class="document-modal" id="document-modal" role="dialog" aria-modal="true" aria-labelledby="document-import-title" hidden>
+  <div class="document-modal-card">
+    <div class="drawer-header">
+      <div>
+        <p class="calendar-eyebrow">CalendAI</p>
+        <h2 id="document-import-title">Importar fechas desde un documento</h2>
+      </div>
+      <button type="button" class="icon-btn" id="close-document-modal" aria-label="Cerrar">×</button>
+    </div>
+    <div class="document-import-copy">
+      <p>Sube un PDF o Word (.docx): detectamos fecha, nombre, lugar y hora de cada evento para que los conviertas en un clic.</p>
+    </div>
+    <form id="form-documento" class="document-import-form">
+      <label class="document-dropzone" id="document-dropzone" for="document-file">
+        <span class="document-dropzone-icon" aria-hidden="true">↑</span>
+        <strong>Arrastra tu archivo aquí</strong>
+        <span>o haz clic para buscar un PDF o Word (.docx)</span>
+        <span class="document-file-name" id="document-file-name">No se ha seleccionado ningún archivo</span>
+        <input id="document-file" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+      </label>
+      <label class="file-input-label" for="document-date-format">Formato de fechas
+        <select id="document-date-format">
+          <option value="auto" selected>Detectar automáticamente</option>
+          <option value="dmy">Día/Mes/Año (05/10/2026 = 5 de octubre)</option>
+          <option value="mdy">Mes/Día/Año (05/10/2026 = 10 de mayo)</option>
+        </select>
+      </label>
+      <div class="document-modal-actions">
+        <button type="button" class="btn btn-ghost" id="cancel-document-modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="submit-document">Buscar eventos</button>
+      </div>
+    </form>
+    <div id="document-status" class="status-block" hidden></div>
+    <div id="document-results" class="document-results" hidden>
+      <h3>Eventos encontrados</h3>
+      <p id="document-notice" class="document-notice" hidden></p>
+      <ul id="document-date-list" class="document-date-list"></ul>
+    </div>
+  </div>
+</section>
+<button type="button" class="ai-chat-toggle" id="open-ai-chat" aria-label="Abrir chat con CalendAI" aria-expanded="false">✦<span>Chat IA</span></button>
+<div class="ai-chat-backdrop" id="ai-chat-backdrop" hidden></div>
+<aside class="ai-chat-panel" id="ai-chat-panel" role="dialog" aria-modal="true" aria-labelledby="ai-chat-title" hidden>
+  <div class="drawer-header">
+    <div class="ai-chat-heading"><span class="ai-chat-avatar" aria-hidden="true">✦</span><div><h2 id="ai-chat-title">Asistente CalendAI</h2><p>Tu agenda, en conversación</p></div></div>
+    <button type="button" class="icon-btn" id="close-ai-chat" aria-label="Cerrar chat">×</button>
+  </div>
+  <div class="ai-chat-messages" aria-live="polite">
+    <p class="ai-chat-welcome">¡Hola! Soy tu asistente de CalendAI. ¿Qué te gustaría organizar?</p>
+  </div>
+  <form class="ai-chat-form" id="ai-chat-form">
+    <label class="sr-only" for="ai-chat-input">Escribe un mensaje</label>
+    <input id="ai-chat-input" type="text" placeholder="Escribe un mensaje..." autocomplete="off">
+    <button type="submit" class="btn btn-primary" aria-label="Enviar mensaje">↑</button>
+  </form>
+</aside>
 <div class="drawer-backdrop" id="event-drawer-backdrop" hidden></div>
 <aside class="drawer" id="event-drawer" role="dialog" aria-modal="true" aria-labelledby="event-drawer-title" hidden>
   <div class="drawer-header"><h2 id="event-drawer-title">Nuevo evento</h2><button type="button" class="icon-btn" id="close-event-drawer" aria-label="Cerrar">×</button></div>
@@ -70,9 +127,34 @@
 </aside>
 <div class="drawer-backdrop" id="collab-drawer-backdrop" hidden></div>
 <aside class="drawer" id="collab-drawer" role="dialog" aria-modal="true" aria-labelledby="collab-drawer-title" hidden>
-  <div class="drawer-header"><h2 id="collab-drawer-title">Colaboradores</h2><button type="button" class="icon-btn" id="close-collab-drawer" aria-label="Cerrar">×</button></div>
-  <div class="drawer-body"><div id="collab-status" class="status-block" hidden></div><ul id="collab-list" class="ledger-list ledger-list-compact" aria-label="Colaboradores del equipo"></ul>
-    <form id="form-colaborador" class="drawer-form" novalidate><h3>Agregar colaborador</h3><div class="field"><label for="collab-usuario">Usuario</label><input id="collab-usuario" type="text" required><p class="field-error" id="collab-usuario-error" role="alert"></p></div><div class="field"><label for="collab-password">Contraseña</label><input id="collab-password" type="password" required minlength="6"><p class="field-error" id="collab-password-error" role="alert"></p></div><p class="form-error" id="collab-form-error" role="alert"></p><button type="submit" class="btn btn-primary">Agregar colaborador</button></form>
+  <div class="drawer-header"><div><p class="calendar-eyebrow">CalendAI</p><h2 id="collab-drawer-title">Gestión de Equipos</h2></div><button type="button" class="icon-btn" id="close-collab-drawer" aria-label="Cerrar">×</button></div>
+  <div class="drawer-body team-management">
+    <div id="collab-status" class="status-block" hidden></div>
+    <section class="team-management-section">
+      <h3>Crear Equipo</h3>
+      <form id="form-crear-equipo" class="team-management-form" novalidate>
+        <label class="sr-only" for="nuevo-equipo-nombre">Nombre del nuevo equipo</label>
+        <input id="nuevo-equipo-nombre" type="text" placeholder="Nombre del nuevo equipo" maxlength="120" required>
+        <p class="field-error" id="nuevo-equipo-nombre-error" role="alert"></p>
+        <button type="submit" class="btn btn-primary" id="crear-equipo-submit">+ Crear Equipo</button>
+      </form>
+    </section>
+    <section class="team-management-section">
+      <h3>Agregar Miembro al Equipo</h3>
+      <form id="form-colaborador" class="team-management-form" novalidate>
+        <label class="sr-only" for="collab-usuario">Buscar usuario registrado</label>
+        <input id="collab-usuario" type="text" placeholder="Buscar usuario (ej. julianm265)" autocomplete="off" required>
+        <p class="field-error" id="collab-usuario-error" role="alert"></p>
+        <p class="team-management-hint">El usuario debe tener una cuenta de CalendAI; nunca solicites su contraseña.</p>
+        <p class="form-error" id="collab-form-error" role="alert"></p>
+        <button type="submit" class="btn btn-secondary" id="add-team-member">Agregar usuario</button>
+      </form>
+    </section>
+    <section class="team-management-section">
+      <h3>Equipo Actual</h3>
+      <p id="collab-current-team-name" class="team-current-name"></p>
+      <ul id="collab-list" class="team-member-list" aria-label="Miembros del equipo actual"></ul>
+    </section>
   </div>
 </aside>
 <div class="drawer-backdrop" id="confirm-backdrop" hidden></div>

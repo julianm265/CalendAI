@@ -25,6 +25,12 @@ namespace CalendarioBackend.Tests
             return equipo;
         }
 
+        public Equipo AgregarEquipoConColaborador(Equipo equipo, Colaborador colaborador, string rol)
+        {
+            equipo.AgregarColaborador(colaborador, rol);
+            return Agregar(equipo);
+        }
+
         public void Guardar(Equipo equipo)
         {
             var indice = _equipos.FindIndex(actual => actual.Id == equipo.Id);
@@ -34,10 +40,11 @@ namespace CalendarioBackend.Tests
                 _equipos[indice] = equipo;
         }
 
-        public void AgregarColaborador(Guid equipoId, Colaborador colaborador)
+        public void AgregarColaborador(Guid equipoId, Colaborador colaborador, string rol = "Miembro")
         {
             var equipo = ObtenerPorId(equipoId) ?? throw new KeyNotFoundException();
-            equipo.AgregarColaborador(colaborador);
+            if (equipo.BuscarColaborador(colaborador.Id) is null)
+                equipo.AgregarColaborador(colaborador, rol);
             if (!_colaboradores.Any(actual => actual.Id == colaborador.Id))
                 _colaboradores.Add(colaborador);
         }
@@ -46,7 +53,6 @@ namespace CalendarioBackend.Tests
         {
             var equipo = ObtenerPorId(equipoId) ?? throw new KeyNotFoundException();
             equipo.EliminarColaborador(colaboradorId);
-            _colaboradores.RemoveAll(colaborador => colaborador.Id == colaboradorId);
         }
 
         public Colaborador? ObtenerPorUsuario(string usuario) =>
@@ -87,7 +93,12 @@ namespace CalendarioBackend.Tests
         public IReadOnlyList<LugarFrecuente> ObtenerLugaresFrecuentes(Guid equipoId, int limite) =>
             throw new NotImplementedException();
 
-        public Equipo CrearCalendarioPersonal(Colaborador colaborador) => throw new NotImplementedException();
+        public Equipo CrearCalendarioPersonal(Colaborador colaborador)
+        {
+            var equipo = new Equipo($"Calendario de {colaborador.Usuario}", true);
+            equipo.AgregarColaborador(colaborador, "Miembro");
+            return Agregar(equipo);
+        }
 
         public void Actualizar(Equipo equipo) { }
 
@@ -156,6 +167,64 @@ namespace CalendarioBackend.Tests
             var servicio = new AutenticacionService(new FakeEquipoRepository());
 
             Assert.Throws<InvalidOperationException>(() => servicio.RegistrarUsuario("camilo", "Password123!"));
+        }
+
+        [Fact]
+        public void AgregarYQuitarMiembro_ConservaLaCuentaRegistrada()
+        {
+            var repository = new FakeEquipoRepository();
+            var account = new Colaborador("julianm265", "ClaveSegura123");
+            repository.Agregar(account, null);
+            var team = repository.Agregar(new Equipo("Proyecto CalendAI"));
+            var service = new EquipoService(repository, repository);
+
+            service.AgregarMiembro(team.Id, account.Usuario);
+            Assert.NotNull(team.BuscarColaborador(account.Id));
+
+            service.EliminarColaborador(team.Id, account.Id);
+
+            Assert.Null(team.BuscarColaborador(account.Id));
+            Assert.NotNull(repository.ObtenerPorUsuario(account.Usuario));
+        }
+
+        [Fact]
+        public void CrearEquipo_AsignaLiderAlCreadorYMiembroAlInvitado()
+        {
+            var repository = new FakeEquipoRepository();
+            var leader = new Colaborador("diego", "ClaveSegura123");
+            var member = new Colaborador("julianm265", "ClaveSegura456");
+            repository.Agregar(leader, null);
+            repository.Agregar(member, null);
+            var service = new EquipoService(repository, repository);
+
+            var team = service.CrearEquipo("Proyecto CalendAI", leader.Usuario);
+            Assert.Single(team.LColaboradores);
+            Assert.Same(leader, team.BuscarColaborador(leader.Id));
+            Assert.Equal("Líder", team.ObtenerRolColaborador(leader.Id));
+
+            service.AgregarMiembro(team.Id, member.Usuario);
+
+            Assert.Equal("Líder", team.ObtenerRolColaborador(leader.Id));
+            Assert.Equal("Miembro", team.ObtenerRolColaborador(member.Id));
+        }
+
+        [Fact]
+        public void ListarEquipos_ExcluyeCalendariosPersonalesYFiltraPorUsuario()
+        {
+            var repository = new FakeEquipoRepository();
+            var user = new Colaborador("diego", "ClaveSegura123");
+            repository.Agregar(user, null);
+            var personal = repository.CrearCalendarioPersonal(user);
+            var team = repository.AgregarEquipoConColaborador(
+                new Equipo("Proyecto CalendAI"),
+                user,
+                "Líder");
+            var service = new EquipoService(repository, repository);
+
+            var teams = service.ListarEquipos(user.Usuario);
+
+            Assert.DoesNotContain(personal, teams);
+            Assert.Contains(team, teams);
         }
     }
 }

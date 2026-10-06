@@ -18,13 +18,33 @@ public class EquipoService
         _colaboradorRepository = colaboradorRepository;
     }
 
-    public Equipo CrearEquipo(string nombreEquipo)
+    public Equipo CrearEquipo(string nombreEquipo, string usuarioCreador)
     {
-        if (_equipoRepository.ObtenerPorNombre(nombreEquipo) is not null)
-            throw new InvalidOperationException($"Ya existe un equipo llamado '{nombreEquipo}'.");
+        if (string.IsNullOrWhiteSpace(nombreEquipo))
+            throw new ArgumentException("El nombre del equipo no puede estar vacío.", nameof(nombreEquipo));
+        if (string.IsNullOrWhiteSpace(usuarioCreador))
+            throw new ArgumentException("El nombre de usuario del creador es obligatorio.", nameof(usuarioCreador));
+        var nombreNormalizado = nombreEquipo.Trim();
+        if (_equipoRepository.ObtenerPorNombre(nombreNormalizado) is not null)
+            throw new InvalidOperationException($"Ya existe un equipo llamado '{nombreNormalizado}'.");
 
-        var equipo = new Equipo(nombreEquipo);
-        return _equipoRepository.Agregar(equipo);
+        var creador = _colaboradorRepository?.ObtenerPorUsuario(usuarioCreador.Trim())
+            ?? throw new KeyNotFoundException($"No se encontró un usuario registrado con el nombre '{usuarioCreador}'.");
+        var equipo = new Equipo(nombreNormalizado);
+        return _equipoRepository.AgregarEquipoConColaborador(equipo, creador, "Líder");
+    }
+
+    public Colaborador AgregarMiembro(Guid equipoId, string usuario)
+    {
+        var equipo = ObtenerEquipoOFallar(equipoId);
+        if (equipo.EsPersonal)
+            throw new InvalidOperationException("No se pueden agregar miembros a un calendario personal.");
+        var colaborador = _colaboradorRepository?.ObtenerPorUsuario(usuario)
+            ?? throw new KeyNotFoundException($"No se encontró un usuario registrado con el nombre '{usuario}'.");
+
+        equipo.AgregarColaborador(colaborador, "Miembro");
+        _equipoRepository.AgregarColaborador(equipo.Id, colaborador, "Miembro");
+        return colaborador;
     }
 
     public Colaborador RegistrarColaborador(Guid equipoId, string usuario, string contraseña)
@@ -43,12 +63,26 @@ public class EquipoService
     public void EliminarColaborador(Guid equipoId, Guid colaboradorId)
     {
         var equipo = ObtenerEquipoOFallar(equipoId);
+        if (equipo.EsPersonal)
+            throw new InvalidOperationException("No se pueden quitar miembros de un calendario personal.");
+        if (equipo.ObtenerRolColaborador(colaboradorId) == "Líder")
+            throw new InvalidOperationException("No se puede eliminar al líder del equipo.");
         if (!equipo.EliminarColaborador(colaboradorId))
             throw new KeyNotFoundException("El colaborador no pertenece a este equipo.");
         _equipoRepository.EliminarColaborador(equipo.Id, colaboradorId);
     }
 
-    public IReadOnlyList<Equipo> ListarEquipos() => _equipoRepository.ObtenerTodos();
+    public IReadOnlyList<Equipo> ListarEquipos(string? usuario = null)
+    {
+        var equipos = _equipoRepository.ObtenerTodos()
+            .Where(equipo => !equipo.EsPersonal);
+        if (string.IsNullOrWhiteSpace(usuario))
+            return equipos.ToList();
+
+        return equipos
+            .Where(equipo => equipo.BuscarColaborador(usuario.Trim()) is not null)
+            .ToList();
+    }
 
     public Equipo ObtenerEquipo(Guid equipoId) => ObtenerEquipoOFallar(equipoId);
 

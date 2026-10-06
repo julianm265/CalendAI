@@ -9,9 +9,10 @@ namespace CalendarioBackend.Core.Repositories;
 /// Implementación en memoria de IEquipoRepository, útil para desarrollo, pruebas y demos.
 /// Thread-safe gracias a ConcurrentDictionary.
 /// </summary>
-public class InMemoryEquipoRepository : IEquipoRepository
+public class InMemoryEquipoRepository : IEquipoRepository, IColaboradorRepository
 {
     private readonly ConcurrentDictionary<Guid, Equipo> _equipos = new();
+    private readonly ConcurrentDictionary<Guid, Colaborador> _colaboradores = new();
 
     public Equipo Agregar(Equipo equipo)
     {
@@ -21,13 +22,45 @@ public class InMemoryEquipoRepository : IEquipoRepository
         return equipo;
     }
 
+    public Equipo AgregarEquipoConColaborador(Equipo equipo, Colaborador colaborador, string rol)
+    {
+        if (!_colaboradores.ContainsKey(colaborador.Id))
+            throw new KeyNotFoundException("No se encontró el usuario registrado.");
+        equipo.AgregarColaborador(colaborador, rol);
+        return Agregar(equipo);
+    }
+
     public void Guardar(Equipo equipo) => _equipos[equipo.Id] = equipo;
 
-    public void AgregarColaborador(Guid equipoId, Colaborador colaborador)
+    public void AgregarColaborador(Guid equipoId, Colaborador colaborador, string rol = "Miembro")
     {
         var equipo = ObtenerEquipoOFallar(equipoId);
+        _colaboradores.TryAdd(colaborador.Id, colaborador);
         if (equipo.BuscarColaborador(colaborador.Id) is null)
-            equipo.AgregarColaborador(colaborador);
+            equipo.AgregarColaborador(colaborador, rol);
+    }
+
+    public Colaborador? ObtenerPorUsuario(string usuario) =>
+        _colaboradores.Values.FirstOrDefault(colaborador =>
+            colaborador.Usuario.Equals(usuario, StringComparison.OrdinalIgnoreCase));
+
+    public bool ExistePorUsuario(string usuario) => ObtenerPorUsuario(usuario) is not null;
+
+    public void Agregar(Colaborador colaborador, Guid? equipoId)
+    {
+        if (ExistePorUsuario(colaborador.Usuario))
+            throw new InvalidOperationException($"El usuario '{colaborador.Usuario}' ya existe.");
+        var equipo = equipoId is Guid id ? ObtenerEquipoOFallar(id) : null;
+        if (!_colaboradores.TryAdd(colaborador.Id, colaborador))
+            throw new InvalidOperationException($"Ya existe el colaborador con id '{colaborador.Id}'.");
+        equipo?.AgregarColaborador(colaborador, "Miembro");
+    }
+
+    public void AsignarAEquipo(Guid colaboradorId, Guid equipoId)
+    {
+        if (!_colaboradores.TryGetValue(colaboradorId, out var colaborador))
+            throw new KeyNotFoundException("No se encontró el colaborador.");
+        AgregarColaborador(equipoId, colaborador, "Miembro");
     }
 
     public void EliminarColaborador(Guid equipoId, Guid colaboradorId) =>
@@ -88,7 +121,8 @@ public class InMemoryEquipoRepository : IEquipoRepository
     public Equipo CrearCalendarioPersonal(Colaborador colaborador)
     {
         var equipo = new Equipo($"Calendario de {colaborador.Usuario}", true);
-        equipo.AgregarColaborador(colaborador);
+        equipo.AgregarColaborador(colaborador, "Miembro");
+        _colaboradores.TryAdd(colaborador.Id, colaborador);
         Agregar(equipo);
         return equipo;
     }
