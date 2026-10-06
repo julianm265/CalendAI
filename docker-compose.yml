@@ -26,6 +26,7 @@
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Calendai: Host=postgres;Port=5432;Database=${POSTGRES_DB:-calendai};Username=${POSTGRES_USER:-calendai_user};Password=${POSTGRES_PASSWORD}
+      GooglePlaces__ApiKey: ${GOOGLE_PLACES_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

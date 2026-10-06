@@ -84,6 +84,9 @@ namespace CalendarioBackend.Tests
 
         public void EliminarEvento(Guid equipoId, Guid eventoId) => throw new NotImplementedException();
 
+        public IReadOnlyList<LugarFrecuente> ObtenerLugaresFrecuentes(Guid equipoId, int limite) =>
+            throw new NotImplementedException();
+
         public Equipo CrearCalendarioPersonal(Colaborador colaborador) => throw new NotImplementedException();
 
         public void Actualizar(Equipo equipo) { }

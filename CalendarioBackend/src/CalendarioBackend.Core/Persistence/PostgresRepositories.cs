@@ -1,6 +1,8 @@
 using CalendarioBackend.Core.Models;
 using CalendarioBackend.Core.Repositories;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Text;
 
 namespace CalendarioBackend.Core.Persistence;
 
@@ -101,6 +103,40 @@ public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRe
 
         db.Eventos.Remove(row);
         GuardarCambios();
+    }
+
+    public IReadOnlyList<LugarFrecuente> ObtenerLugaresFrecuentes(Guid equipoId, int limite)
+    {
+        var lugares = db.Eventos.AsNoTracking()
+            .Where(evento => evento.EquipoId == equipoId && evento.Lugar != null && evento.Lugar != "")
+            .Select(evento => evento.Lugar!)
+            .ToList();
+
+        return lugares
+            .Select(lugar => new { Original = lugar.Trim(), Clave = NormalizarLugar(lugar) })
+            .Where(lugar => lugar.Clave.Length > 0)
+            .GroupBy(lugar => lugar.Clave)
+            .OrderByDescending(grupo => grupo.Count())
+            .ThenBy(grupo => grupo.Min(item => item.Original), StringComparer.OrdinalIgnoreCase)
+            .Take(limite)
+            .Select(grupo => new LugarFrecuente(
+                grupo.OrderBy(item => item.Original.Length).First().Original,
+                grupo.Count()))
+            .ToList();
+    }
+
+    private static string NormalizarLugar(string lugar)
+    {
+        var descompuesto = lugar.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder();
+        foreach (var caracter in descompuesto)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(caracter) != UnicodeCategory.NonSpacingMark)
+                builder.Append(caracter);
+        }
+
+        return string.Join(' ', builder.ToString().Normalize(NormalizationForm.FormC)
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     }
 
     public Equipo? ObtenerPorId(Guid id) => Cargar(db.Equipos.AsNoTracking().FirstOrDefault(row => row.Id == id));
