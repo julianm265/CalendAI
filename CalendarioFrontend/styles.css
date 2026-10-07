@@ -323,20 +323,20 @@ textarea { resize: vertical; min-height: 4.5rem; }
 }
 
 .screen-login .shape-1 {
-  width: 500px; 
+  width: 500px;
   height: 400px;
   background: #a8d8ff;
   opacity: 0.6;
-  top: 10%; 
+  top: 10%;
   left: 15%;
 }
 
 .screen-login .shape-2 {
-  width: 600px; 
+  width: 600px;
   height: 500px;
   background: #b9e8ff;
   opacity: 0.5;
-  bottom: 5%; 
+  bottom: 5%;
   right: 10%;
 }
 
@@ -353,135 +353,135 @@ textarea { resize: vertical; min-height: 4.5rem; }
   box-shadow: 0 20px 60px rgba(0,0,0,0.06);
 }
 
-.screen-login .logo { 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  gap: 10px; 
-  margin-bottom: 20px; 
-  font-size: 24px; 
-  font-weight: 300; 
-  letter-spacing: 4px; 
-  color: #1a2a5a; 
+.screen-login .logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: 300;
+  letter-spacing: 4px;
+  color: #1a2a5a;
 }
 
-.screen-login .logo-icon { 
-  width: 32px; 
-  height: 32px; 
-  background: linear-gradient(135deg, #4a8cff, #6fb1ff); 
-  border-radius: 10px 10px 10px 2px; 
+.screen-login .logo-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #4a8cff, #6fb1ff);
+  border-radius: 10px 10px 10px 2px;
 }
 
-.screen-login h1 { 
-  font-size: 25px; 
-  font-weight: 600; 
-  color: #1a2a5a; 
-  text-align: center; 
+.screen-login h1 {
+  font-size: 25px;
+  font-weight: 600;
+  color: #1a2a5a;
+  text-align: center;
 }
 
-.screen-login .subtitle { 
-  text-align: center; 
-  color: #6b7a99; 
-  font-size: 14px; 
-  margin: 8px 0 20px; 
+.screen-login .subtitle {
+  text-align: center;
+  color: #6b7a99;
+  font-size: 14px;
+  margin: 8px 0 20px;
 }
 
-.screen-login label { 
-  font-size: 13px; 
-  font-weight: 500; 
-  color: #1a2a5a; 
-  display: block; 
-  margin-bottom: 6px; 
+.screen-login label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a2a5a;
+  display: block;
+  margin-bottom: 6px;
 }
 
-.screen-login .input-group { 
-  position: relative; 
-  margin-bottom: 16px; 
+.screen-login .input-group {
+  position: relative;
+  margin-bottom: 16px;
 }
 
 .screen-login .input-group input {
-  width: 100%; 
-  height: 46px; 
+  width: 100%;
+  height: 46px;
   padding: 0 44px 0 40px;
   background: rgba(216, 232, 248, 0.6);
   border: 1px solid rgba(200,220,240,0.6);
-  border-radius: 10px; 
-  font-size: 14px; 
-  outline: none; 
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
   transition: 0.2s;
 }
 
-.screen-login .input-group input:focus { 
-  border-color: #4a8cff; 
-  background: rgba(255,255,255,0.9); 
+.screen-login .input-group input:focus {
+  border-color: #4a8cff;
+  background: rgba(255,255,255,0.9);
 }
 
-.screen-login .input-group .icon { 
-  position: absolute; 
-  left: 14px; 
-  top: 50%; 
-  transform: translateY(-50%); 
-  opacity: 0.5; 
+.screen-login .input-group .icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.5;
 }
 
-.screen-login .options { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  font-size: 13px; 
-  margin-bottom: 20px; 
+.screen-login .options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin-bottom: 20px;
 }
 
-.screen-login .options a { 
-  color: #2f6fdb; 
-  text-decoration: none; 
+.screen-login .options a {
+  color: #2f6fdb;
+  text-decoration: none;
 }
 
-.screen-login .options a:hover { 
-  text-decoration: underline; 
+.screen-login .options a:hover {
+  text-decoration: underline;
 }
 
 .screen-login .btn-primary {
-  width: 100%; 
-  height: 48px; 
-  border: none; 
+  width: 100%;
+  height: 48px;
+  border: none;
   border-radius: 10px;
   background: linear-gradient(90deg, #2f6fdb, #5aa0ff);
-  color: white; 
-  font-size: 15px; 
-  font-weight: 600; 
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(47,111,219,0.3); 
+  box-shadow: 0 8px 20px rgba(47,111,219,0.3);
   transition: 0.2s;
 }
 
-.screen-login .btn-primary:hover { 
-  transform: translateY(-1px); 
-  box-shadow: 0 12px 24px rgba(47,111,219,0.35); 
+.screen-login .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(47,111,219,0.35);
 }
 
-.screen-login .divider { 
-  display: flex; 
-  align-items: center; 
-  gap: 12px; 
-  margin: 20px 0; 
-  color: #8a9bb8; 
-  font-size: 13px; 
+.screen-login .divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: #8a9bb8;
+  font-size: 13px;
 }
 
-.screen-login .divider::before, 
-.screen-login .divider::after { 
-  content: ''; 
-  flex: 1; 
-  height: 1px; 
-  background: rgba(0,0,0,0.08); 
+.screen-login .divider::before,
+.screen-login .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(0,0,0,0.08);
 }
 
-.screen-login .footer { 
-  text-align: center; 
-  margin-top: 20px; 
-  font-size: 13px; 
-  color: #6b7a99; 
+.screen-login .footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 13px;
+  color: #6b7a99;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -543,6 +543,21 @@ main#main {
 .view-header h1 { font-size: 1.7rem; margin-bottom: 0.35rem; }
 .view-subtitle { color: var(--color-ink-soft); }
 
+.teams-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.panel {
+  background: var(--color-paper, #fff);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+
+.panel h2 { margin: 0 0 1rem; font-size: 1.15rem; }
+
 /* ---------------------------------------------------------------------- */
 /* Listas tipo "libro mayor"                                              */
 /* ---------------------------------------------------------------------- */
@@ -570,6 +585,10 @@ main#main {
 .ledger-row-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
 .ledger-list-compact .ledger-row { padding: 0.7rem 0.15rem; }
+
+@media (max-width: 760px) {
+  .teams-layout { grid-template-columns: 1fr; }
+}
 
 /* ---------------------------------------------------------------------- */
 /* Calendario                                                              */

@@ -31,6 +31,15 @@ function mensajePorEstado(status) {
   }
 }
 
+function encabezadoDeSesion() {
+  try {
+    const colaborador = JSON.parse(sessionStorage.getItem('calendarioBackend.colaborador') || 'null');
+    return colaborador?.usuario ? { 'X-Usuario': colaborador.usuario } : {};
+  } catch {
+    return {};
+  }
+}
+
 /** Intenta sacar un mensaje legible de un cuerpo de error JSON o de texto plano. */
 function mensajeDesdeBody(body, fallback) {
   if (!body) return fallback;
@@ -69,7 +78,7 @@ async function apiFetch(path, options = {}) {
         ...options,
         headers: isFormData
           ? (options.headers || {})
-          : { 'Content-Type': 'application/json', ...(options.headers || {}) },
+          : { 'Content-Type': 'application/json', ...encabezadoDeSesion(), ...(options.headers || {}) },
       });
       break;
     } catch {
@@ -122,6 +131,21 @@ export function registrarColaborador(equipoId, usuario, contraseña) {
     method: 'POST',
     body: JSON.stringify({ usuario, contraseña }),
   });
+}
+
+export function invitarUsuario(equipoId, usuario) {
+  return apiFetch(`/equipos/${encodeURIComponent(equipoId)}/invitaciones`, {
+    method: 'POST',
+    body: JSON.stringify({ usuario }),
+  });
+}
+
+export function listarInvitaciones() {
+  return apiFetch('/equipos/invitaciones');
+}
+
+export function aceptarInvitacion(invitacionId) {
+  return apiFetch(`/equipos/invitaciones/${encodeURIComponent(invitacionId)}/aceptar`, { method: 'POST' });
 }
 
 /* ---------------------------- Autenticación ------------------------------ */

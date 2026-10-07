@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS equipos (
     es_personal boolean NOT NULL DEFAULT false,
     creado_en timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE equipos ADD COLUMN IF NOT EXISTS lider_id uuid NULL;
 
 CREATE TABLE IF NOT EXISTS calendarios (
     id uuid PRIMARY KEY,
@@ -32,6 +33,18 @@ CREATE TABLE IF NOT EXISTS eventos (
 );
 
 CREATE INDEX IF NOT EXISTS ix_colaboradores_equipo_id ON colaboradores(equipo_id);
+CREATE TABLE IF NOT EXISTS equipo_miembros (
+    equipo_id uuid NOT NULL REFERENCES equipos(id) ON DELETE CASCADE,
+    colaborador_id uuid NOT NULL REFERENCES colaboradores(id) ON DELETE CASCADE,
+    PRIMARY KEY (equipo_id, colaborador_id)
+);
+CREATE TABLE IF NOT EXISTS invitaciones_equipo (
+    id uuid PRIMARY KEY,
+    equipo_id uuid NOT NULL REFERENCES equipos(id) ON DELETE CASCADE,
+    colaborador_id uuid NOT NULL REFERENCES colaboradores(id) ON DELETE CASCADE,
+    creada_en timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (equipo_id, colaborador_id)
+);
 CREATE INDEX IF NOT EXISTS ix_eventos_equipo_fecha ON eventos(equipo_id, fecha);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_colaboradores_equipo_usuario_ci
     ON colaboradores (equipo_id, lower(usuario));

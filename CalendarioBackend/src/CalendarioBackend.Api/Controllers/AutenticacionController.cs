@@ -24,7 +24,10 @@ public class AutenticacionController : ControllerBase
                 new ColaboradorResumen(colaborador.Id, colaborador.Usuario),
                 _autenticacionService.ObtenerOCrearCalendarioPersonal(colaborador) is { } equipo
                     ? new EquipoLoginResumen(equipo.Id, equipo.NombreEquipo, equipo.LColaboradores.Count, equipo.EsPersonal)
-                    : null));
+                    : null,
+                _autenticacionService.ObtenerEquiposDelColaborador(colaborador)
+                    .Select(item => new EquipoLoginResumen(item.Id, item.NombreEquipo, item.LColaboradores.Count, item.EsPersonal))
+                    .ToList()));
     }
 
     [HttpPost("registro")]
@@ -48,5 +51,5 @@ public class AutenticacionController : ControllerBase
 
 public sealed record LoginRequest(string Usuario, string Contraseña);
 public sealed record RegistroRequest(string Usuario, string Contraseña);
-public sealed record LoginResponse(ColaboradorResumen Colaborador, EquipoLoginResumen? Equipo);
+public sealed record LoginResponse(ColaboradorResumen Colaborador, EquipoLoginResumen? Equipo, IReadOnlyList<EquipoLoginResumen> Equipos);
 public sealed record EquipoLoginResumen(Guid Id, string Nombre, int Colaboradores, bool EsPersonal);

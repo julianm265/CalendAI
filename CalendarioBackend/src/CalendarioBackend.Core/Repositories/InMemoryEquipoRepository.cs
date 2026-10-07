@@ -12,6 +12,7 @@ namespace CalendarioBackend.Core.Repositories;
 public class InMemoryEquipoRepository : IEquipoRepository
 {
     private readonly ConcurrentDictionary<Guid, Equipo> _equipos = new();
+    private readonly List<(Guid Id, Guid EquipoId, Guid ColaboradorId)> _invitaciones = new();
 
     public Equipo Agregar(Equipo equipo)
     {
@@ -91,6 +92,40 @@ public class InMemoryEquipoRepository : IEquipoRepository
         equipo.AgregarColaborador(colaborador);
         Agregar(equipo);
         return equipo;
+    }
+
+    public IReadOnlyList<Equipo> ObtenerPorColaborador(Guid colaboradorId) =>
+        _equipos.Values.Where(equipo => equipo.BuscarColaborador(colaboradorId) is not null).ToList();
+
+    public void AgregarMiembro(Guid equipoId, Colaborador colaborador)
+    {
+        var equipo = ObtenerEquipoOFallar(equipoId);
+        if (equipo.BuscarColaborador(colaborador.Id) is not null)
+            throw new InvalidOperationException("El usuario ya pertenece al equipo.");
+        equipo.AgregarColaborador(colaborador);
+    }
+
+    public bool EsMiembro(Guid equipoId, Guid colaboradorId) =>
+        ObtenerEquipoOFallar(equipoId).BuscarColaborador(colaboradorId) is not null;
+
+    public void CrearInvitacion(Guid equipoId, Colaborador colaborador)
+    {
+        if (!_invitaciones.Any(item => item.EquipoId == equipoId && item.ColaboradorId == colaborador.Id))
+            _invitaciones.Add((Guid.NewGuid(), equipoId, colaborador.Id));
+    }
+
+    public IReadOnlyList<(Guid Id, Equipo Equipo)> ObtenerInvitaciones(Guid colaboradorId) =>
+        _invitaciones.Where(item => item.ColaboradorId == colaboradorId)
+            .Select(item => (item.Id, ObtenerEquipoOFallar(item.EquipoId))).ToList();
+
+    public void AceptarInvitacion(Guid invitacionId, Guid colaboradorId)
+    {
+        var invitacion = _invitaciones.FirstOrDefault(item => item.Id == invitacionId && item.ColaboradorId == colaboradorId);
+        if (invitacion == default) throw new KeyNotFoundException("No se encontró la invitación.");
+        var colaborador = _equipos.Values.Select(equipo => equipo.BuscarColaborador(colaboradorId)).FirstOrDefault(item => item is not null)
+            ?? throw new KeyNotFoundException("No se encontró el usuario.");
+        AgregarMiembro(invitacion.EquipoId, colaborador);
+        _invitaciones.Remove(invitacion);
     }
 
     private static IEnumerable<Evento> EnumerarEventos(Equipo equipo) =>

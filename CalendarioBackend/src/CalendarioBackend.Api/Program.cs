@@ -44,7 +44,26 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<CalendarioDbContext>();
     db.Database.EnsureCreated();
     db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS equipos ADD COLUMN IF NOT EXISTS es_personal boolean NOT NULL DEFAULT false");
+    db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS equipos ADD COLUMN IF NOT EXISTS lider_id uuid NULL");
     db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS colaboradores ALTER COLUMN equipo_id DROP NOT NULL");
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS equipo_miembros (
+            equipo_id uuid NOT NULL REFERENCES equipos(id) ON DELETE CASCADE,
+            colaborador_id uuid NOT NULL REFERENCES colaboradores(id) ON DELETE CASCADE,
+            PRIMARY KEY (equipo_id, colaborador_id)
+        );
+        CREATE TABLE IF NOT EXISTS invitaciones_equipo (
+            id uuid PRIMARY KEY,
+            equipo_id uuid NOT NULL REFERENCES equipos(id) ON DELETE CASCADE,
+            colaborador_id uuid NOT NULL REFERENCES colaboradores(id) ON DELETE CASCADE,
+            creada_en timestamptz NOT NULL DEFAULT now(),
+            UNIQUE (equipo_id, colaborador_id)
+        );
+        INSERT INTO equipo_miembros (equipo_id, colaborador_id)
+        SELECT equipo_id, id FROM colaboradores
+        WHERE equipo_id IS NOT NULL
+        ON CONFLICT DO NOTHING;
+        """);
 }
 
 app.UseRouting();

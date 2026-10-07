@@ -67,6 +67,12 @@ function renderTopbar(vista) {
     );
   }
 
+  if (vista === 'calendar' || vista === 'teams') {
+    contenedor.appendChild(
+      ce('button', { class: 'btn btn-secondary', type: 'button', onClick: irAEquipos }, 'Equipos'),
+    );
+  }
+
   if (state.colaborador) {
     contenedor.appendChild(ce('span', { class: 'topbar-chip' }, state.colaborador.usuario));
     contenedor.appendChild(
@@ -93,7 +99,7 @@ let isRegistering = false;
 function cambiarModoAuth(e) {
   if (e) e.preventDefault();
   isRegistering = !isRegistering;
-  
+
   clearFieldErrors(['login-usuario', 'login-password']);
   setFormError('login-form-error', '');
   qs('#form-login').reset();
@@ -188,6 +194,7 @@ async function cargarEquipos() {
     const equipos = (Array.isArray(bruto) ? bruto : []).map(normalizarEquipo);
     setStatus('teams-status');
     renderListaEquipos(equipos);
+    await cargarInvitaciones();
   } catch (error) {
     setStatus('teams-status', { error: mensajeDeError(error) });
   }
@@ -219,6 +226,41 @@ function renderListaEquipos(equipos) {
       ]),
     ]);
     lista.appendChild(fila);
+  }
+
+}
+
+async function cargarInvitaciones() {
+  setStatus('invitations-status', { loading: 'Cargando invitaciones…' });
+  const lista = qs('#invitations-list');
+  lista.innerHTML = '';
+  try {
+    const invitaciones = await api.listarInvitaciones();
+    setStatus('invitations-status');
+    if (!Array.isArray(invitaciones) || invitaciones.length === 0) {
+      setStatus('invitations-status', { empty: 'No tienes invitaciones pendientes.' });
+      return;
+    }
+    for (const invitacion of invitaciones) {
+      lista.appendChild(ce('li', { class: 'ledger-row' }, [
+        ce('div', { class: 'ledger-row-main' }, [
+          ce('span', { class: 'ledger-row-title' }, invitacion.equipoNombre ?? invitacion.EquipoNombre),
+          ce('span', { class: 'ledger-row-meta' }, 'Invitación a calendario empresarial'),
+        ]),
+        ce('button', {
+          class: 'btn btn-primary', type: 'button',
+          onClick: async () => {
+            try {
+              await api.aceptarInvitacion(invitacion.id ?? invitacion.Id);
+              toast('Invitación aceptada.', 'success');
+              await cargarEquipos();
+            } catch (error) { toast(mensajeDeError(error), 'error'); }
+          },
+        }, 'Aceptar'),
+      ]));
+    }
+  } catch (error) {
+    setStatus('invitations-status', { error: mensajeDeError(error) });
   }
 }
 
@@ -578,7 +620,6 @@ async function manejarSubmitEvento(event) {
   if (!fecha) { setFieldError('evento-fecha', 'Selecciona una fecha.'); valido = false; }
   if (!nombreEvento) { setFieldError('evento-nombre', 'Escribe un nombre para el evento.'); valido = false; }
   if (!hora) { setFieldError('evento-hora', 'Selecciona una hora.'); valido = false; }
-  if (!lugar) { setFieldError('evento-lugar', 'Escribe un lugar.'); valido = false; }
   if (!valido) return;
 
   const boton = qs('#submit-event');
@@ -589,7 +630,7 @@ async function manejarSubmitEvento(event) {
       fecha,
       nombreEvento,
       hora: normalizarHoraParaApi(hora),
-      lugar,
+      lugar: lugar || null,
       descripcion: descripcion || null,
       colaboradorOrganizadorId,
     });
@@ -762,7 +803,7 @@ async function usarEventoDetectado(evento, fecha) {
 /* ============================== DRAWER: colaboradores ============================== */
 
 async function abrirColaboradores() {
-  clearFieldErrors(['collab-usuario', 'collab-password']);
+  clearFieldErrors(['collab-usuario']);
   setFormError('collab-form-error', '');
   qs('#form-colaborador').reset();
   openDrawer('collab-drawer', 'collab-drawer-backdrop');
@@ -807,27 +848,22 @@ function renderListaColaboradores(colaboradores) {
 
 async function manejarSubmitColaborador(event) {
   event.preventDefault();
-  clearFieldErrors(['collab-usuario', 'collab-password']);
+  clearFieldErrors(['collab-usuario']);
   setFormError('collab-form-error', '');
 
   const usuario = qs('#collab-usuario').value.trim();
-  const contraseña = qs('#collab-password').value;
 
   let valido = true;
   if (!usuario) { setFieldError('collab-usuario', 'Escribe un usuario.'); valido = false; }
-  if (!contraseña || contraseña.length < 6) {
-    setFieldError('collab-password', 'La contraseña debe tener al menos 6 caracteres.');
-    valido = false;
-  }
   if (!valido) return;
 
   const boton = qs('#form-colaborador button[type="submit"]');
-  setButtonLoading(boton, true, 'Agregando…');
+  setButtonLoading(boton, true, 'Enviando…');
 
   try {
-    await api.registrarColaborador(state.equipoActivo.id, usuario, contraseña);
-    qs('#form-colaborador').reset(); // nunca dejar la contraseña en el formulario
-    toast(`Colaborador "${usuario}" agregado.`, 'success');
+    await api.invitarUsuario(state.equipoActivo.id, usuario);
+    qs('#form-colaborador').reset();
+    toast(`Invitación enviada a "${usuario}".`, 'success');
     await cargarColaboradores();
   } catch (error) {
     setFormError('collab-form-error', mensajeDeError(error));
@@ -851,6 +887,9 @@ function inicializar() {
   if (qs('#toggle-auth-mode')) qs('#toggle-auth-mode').addEventListener('click', cambiarModoAuth);
   if (qs('#form-login')) qs('#form-login').addEventListener('submit', manejarSubmitLogin);
   if (qs('#form-crear-equipo')) qs('#form-crear-equipo').addEventListener('submit', manejarSubmitCrearEquipo);
+  if (qs('#open-new-team')) qs('#open-new-team').addEventListener('click', () => openDrawer('team-drawer', 'team-drawer-backdrop'));
+  if (qs('#close-team-drawer')) qs('#close-team-drawer').addEventListener('click', () => closeDrawer('team-drawer', 'team-drawer-backdrop'));
+  if (qs('#cancel-team')) qs('#cancel-team').addEventListener('click', () => closeDrawer('team-drawer', 'team-drawer-backdrop'));
   if (qs('#prev-month')) qs('#prev-month').addEventListener('click', manejarMesAnterior);
   if (qs('#next-month')) qs('#next-month').addEventListener('click', manejarMesSiguiente);
   if (qs('#open-new-event')) qs('#open-new-event').addEventListener('click', abrirDrawerEvento);

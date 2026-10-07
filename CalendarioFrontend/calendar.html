@@ -47,21 +47,50 @@
           <ul id="document-date-list" class="document-date-list"></ul>
         </div>
       </section>
-      <div id="calendar-status" class="status-block" hidden></div>
-      <div class="calendar-layout">
-        <div class="calendar-grid-wrap"><div class="weekday-row"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="calendar-grid" class="calendar-grid" role="grid" aria-label="Días del mes"></div></div>
-        <aside id="day-panel" class="day-panel" aria-live="polite"><h2 id="day-panel-title">Selecciona un día</h2><div id="day-panel-status" class="status-block" hidden></div><ul id="day-events-list" class="events-list"></ul><button type="button" class="btn btn-secondary" id="open-new-event-day" hidden>+ Agregar evento este día</button></aside>
+        <div id="calendar-status" class="status-block" hidden></div>
+        <div class="calendar-layout">
+          <div class="calendar-grid-wrap"><div class="weekday-row"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="calendar-grid" class="calendar-grid" role="grid" aria-label="Días del mes"></div></div>
+          <aside id="day-panel" class="day-panel" aria-live="polite"><h2 id="day-panel-title">Selecciona un día</h2><div id="day-panel-status" class="status-block" hidden></div><ul id="day-events-list" class="events-list"></ul><button type="button" class="btn btn-secondary" id="open-new-event-day" hidden>+ Agregar evento este día</button></aside>
+        </div>
+      </section>
+      <section id="view-teams" class="view" hidden>
+        <div class="calendar-toolbar">
+          <div>
+            <p class="eyebrow">Organización</p>
+            <h1 class="month-label">Mis equipos</h1>
+          </div>
+          <button type="button" class="btn btn-primary" id="open-new-team">+ Crear equipo</button>
+        </div>
+        <div class="teams-layout">
+          <section class="panel" aria-labelledby="teams-title">
+            <h2 id="teams-title">Calendarios disponibles</h2>
+            <div id="teams-status" class="status-block" hidden></div>
+            <ul id="teams-list" class="ledger-list" aria-label="Mis equipos"></ul>
+          </section>
+          <section class="panel" aria-labelledby="invitations-title">
+            <h2 id="invitations-title">Invitaciones pendientes</h2>
+            <div id="invitations-status" class="status-block" hidden></div>
+            <ul id="invitations-list" class="ledger-list" aria-label="Invitaciones pendientes"></ul>
+          </section>
       </div>
-    </section>
+      </section>
   </main>
-</div>
+  </div>
+  <div class="drawer-backdrop" id="team-drawer-backdrop" hidden></div>
+  <aside class="drawer" id="team-drawer" role="dialog" aria-modal="true" aria-labelledby="team-drawer-title" hidden>
+    <div class="drawer-header"><h2 id="team-drawer-title">Crear equipo</h2><button type="button" class="icon-btn" id="close-team-drawer" aria-label="Cerrar">×</button></div>
+    <form id="form-crear-equipo" class="drawer-form" novalidate>
+      <div class="field"><label for="nuevo-equipo-nombre">Nombre del equipo</label><input id="nuevo-equipo-nombre" type="text" required maxlength="120" placeholder="Ej. Marketing"><p class="field-error" id="nuevo-equipo-nombre-error" role="alert"></p></div>
+      <div class="drawer-actions"><button type="button" class="btn btn-ghost" id="cancel-team">Cancelar</button><button type="submit" class="btn btn-primary" id="crear-equipo-submit">Crear equipo</button></div>
+    </form>
+  </aside>
 <div class="drawer-backdrop" id="event-drawer-backdrop" hidden></div>
 <aside class="drawer" id="event-drawer" role="dialog" aria-modal="true" aria-labelledby="event-drawer-title" hidden>
   <div class="drawer-header"><h2 id="event-drawer-title">Nuevo evento</h2><button type="button" class="icon-btn" id="close-event-drawer" aria-label="Cerrar">×</button></div>
   <form id="form-evento" class="drawer-form" novalidate>
     <div class="field"><label for="evento-fecha">Fecha</label><input id="evento-fecha" type="date" required><p class="field-error" id="evento-fecha-error" role="alert"></p></div>
     <div class="field"><label for="evento-nombre">Nombre del evento</label><input id="evento-nombre" type="text" required maxlength="120"><p class="field-error" id="evento-nombre-error" role="alert"></p></div>
-    <div class="field-row"><div class="field"><label for="evento-hora">Hora</label><input id="evento-hora" type="time" required><p class="field-error" id="evento-hora-error" role="alert"></p></div><div class="field place-field"><label for="evento-lugar">Lugar</label><input id="evento-lugar" type="text" required maxlength="120" autocomplete="off" placeholder="Busca un lugar..." aria-controls="evento-lugar-sugerencias" aria-describedby="evento-lugar-ayuda" aria-expanded="false"><ul id="evento-lugar-sugerencias" class="place-suggestions" hidden role="listbox"></ul><p id="evento-lugar-ayuda" class="place-hint">Escribe al menos 2 caracteres para buscar.</p><p class="field-error" id="evento-lugar-error" role="alert"></p></div></div>
+    <div class="field-row"><div class="field"><label for="evento-hora">Hora</label><input id="evento-hora" type="time" required><p class="field-error" id="evento-hora-error" role="alert"></p></div><div class="field place-field"><label for="evento-lugar">Lugar <span class="optional">(opcional)</span></label><input id="evento-lugar" type="text" maxlength="120" autocomplete="off" placeholder="Busca un lugar..." aria-controls="evento-lugar-sugerencias" aria-describedby="evento-lugar-ayuda" aria-expanded="false"><ul id="evento-lugar-sugerencias" class="place-suggestions" hidden role="listbox"></ul><p id="evento-lugar-ayuda" class="place-hint">Puedes dejarlo vacío o escribir al menos 2 caracteres para buscar.</p><p class="field-error" id="evento-lugar-error" role="alert"></p></div></div>
     <div class="field"><label for="evento-descripcion">Descripción <span class="optional">(opcional)</span></label><textarea id="evento-descripcion" rows="3" maxlength="500"></textarea></div>
     <div class="field"><label for="evento-organizador">Organizador <span class="optional">(opcional)</span></label><select id="evento-organizador"><option value="">Sin asignar</option></select></div>
     <p class="form-error" id="evento-form-error" role="alert"></p>
@@ -72,7 +101,7 @@
 <aside class="drawer" id="collab-drawer" role="dialog" aria-modal="true" aria-labelledby="collab-drawer-title" hidden>
   <div class="drawer-header"><h2 id="collab-drawer-title">Colaboradores</h2><button type="button" class="icon-btn" id="close-collab-drawer" aria-label="Cerrar">×</button></div>
   <div class="drawer-body"><div id="collab-status" class="status-block" hidden></div><ul id="collab-list" class="ledger-list ledger-list-compact" aria-label="Colaboradores del equipo"></ul>
-    <form id="form-colaborador" class="drawer-form" novalidate><h3>Agregar colaborador</h3><div class="field"><label for="collab-usuario">Usuario</label><input id="collab-usuario" type="text" required><p class="field-error" id="collab-usuario-error" role="alert"></p></div><div class="field"><label for="collab-password">Contraseña</label><input id="collab-password" type="password" required minlength="6"><p class="field-error" id="collab-password-error" role="alert"></p></div><p class="form-error" id="collab-form-error" role="alert"></p><button type="submit" class="btn btn-primary">Agregar colaborador</button></form>
+    <form id="form-colaborador" class="drawer-form" novalidate><h3>Invitar usuario</h3><div class="field"><label for="collab-usuario">Usuario</label><input id="collab-usuario" type="text" required><p class="field-error" id="collab-usuario-error" role="alert"></p></div><p class="place-hint">El usuario debe tener una cuenta registrada. Recibirá una invitación pendiente.</p><p class="form-error" id="collab-form-error" role="alert"></p><button type="submit" class="btn btn-primary">Enviar invitación</button></form>
   </div>
 </aside>
 <div class="drawer-backdrop" id="confirm-backdrop" hidden></div>

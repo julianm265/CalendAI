@@ -8,6 +8,8 @@ public sealed class CalendarioDbContext(DbContextOptions<CalendarioDbContext> op
     public DbSet<EquipoRow> Equipos => Set<EquipoRow>();
     public DbSet<CalendarioRow> Calendarios => Set<CalendarioRow>();
     public DbSet<ColaboradorRow> Colaboradores => Set<ColaboradorRow>();
+    public DbSet<EquipoMiembroRow> EquipoMiembros => Set<EquipoMiembroRow>();
+    public DbSet<InvitacionEquipoRow> InvitacionesEquipo => Set<InvitacionEquipoRow>();
     public DbSet<EventoRow> Eventos => Set<EventoRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -17,6 +19,7 @@ public sealed class CalendarioDbContext(DbContextOptions<CalendarioDbContext> op
         modelBuilder.Entity<EquipoRow>().Property(row => row.Id).HasColumnName("id");
         modelBuilder.Entity<EquipoRow>().Property(row => row.Nombre).HasColumnName("nombre");
         modelBuilder.Entity<EquipoRow>().Property(row => row.EsPersonal).HasColumnName("es_personal");
+        modelBuilder.Entity<EquipoRow>().Property(row => row.LiderId).HasColumnName("lider_id");
         modelBuilder.Entity<EquipoRow>().HasIndex(row => row.Nombre).IsUnique();
         modelBuilder.Entity<CalendarioRow>().ToTable("calendarios");
         modelBuilder.Entity<CalendarioRow>().HasKey(row => row.Id);
@@ -31,6 +34,19 @@ public sealed class CalendarioDbContext(DbContextOptions<CalendarioDbContext> op
         modelBuilder.Entity<ColaboradorRow>().Property(row => row.EquipoId).HasColumnName("equipo_id");
         modelBuilder.Entity<ColaboradorRow>().HasIndex(row => row.Usuario);
         modelBuilder.Entity<ColaboradorRow>().HasOne<EquipoRow>().WithMany().HasForeignKey(row => row.EquipoId).IsRequired(false);
+        modelBuilder.Entity<EquipoMiembroRow>().ToTable("equipo_miembros");
+        modelBuilder.Entity<EquipoMiembroRow>().HasKey(row => new { row.EquipoId, row.ColaboradorId });
+        modelBuilder.Entity<EquipoMiembroRow>().Property(row => row.EquipoId).HasColumnName("equipo_id");
+        modelBuilder.Entity<EquipoMiembroRow>().Property(row => row.ColaboradorId).HasColumnName("colaborador_id");
+        modelBuilder.Entity<EquipoMiembroRow>().HasOne<EquipoRow>().WithMany().HasForeignKey(row => row.EquipoId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<EquipoMiembroRow>().HasOne<ColaboradorRow>().WithMany().HasForeignKey(row => row.ColaboradorId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<InvitacionEquipoRow>().ToTable("invitaciones_equipo");
+        modelBuilder.Entity<InvitacionEquipoRow>().HasKey(row => row.Id);
+        modelBuilder.Entity<InvitacionEquipoRow>().Property(row => row.Id).HasColumnName("id");
+        modelBuilder.Entity<InvitacionEquipoRow>().Property(row => row.EquipoId).HasColumnName("equipo_id");
+        modelBuilder.Entity<InvitacionEquipoRow>().Property(row => row.ColaboradorId).HasColumnName("colaborador_id");
+        modelBuilder.Entity<InvitacionEquipoRow>().Property(row => row.CreadaEn).HasColumnName("creada_en");
+        modelBuilder.Entity<InvitacionEquipoRow>().HasIndex(row => new { row.EquipoId, row.ColaboradorId }).IsUnique();
         modelBuilder.Entity<EventoRow>().ToTable("eventos");
         modelBuilder.Entity<EventoRow>().HasKey(row => row.Id);
         modelBuilder.Entity<EventoRow>().Property(row => row.Id).HasColumnName("id");
@@ -52,6 +68,21 @@ public sealed class EquipoRow
     public Guid Id { get; set; }
     public string Nombre { get; set; } = "";
     public bool EsPersonal { get; set; }
+    public Guid? LiderId { get; set; }
+}
+
+public sealed class EquipoMiembroRow
+{
+    public Guid EquipoId { get; set; }
+    public Guid ColaboradorId { get; set; }
+}
+
+public sealed class InvitacionEquipoRow
+{
+    public Guid Id { get; set; }
+    public Guid EquipoId { get; set; }
+    public Guid ColaboradorId { get; set; }
+    public DateTime CreadaEn { get; set; }
 }
 
 public sealed class CalendarioRow

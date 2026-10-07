@@ -88,6 +88,12 @@ namespace CalendarioBackend.Tests
             throw new NotImplementedException();
 
         public Equipo CrearCalendarioPersonal(Colaborador colaborador) => throw new NotImplementedException();
+        public IReadOnlyList<Equipo> ObtenerPorColaborador(Guid colaboradorId) => _equipos.Where(e => e.BuscarColaborador(colaboradorId) is not null).ToList();
+        public void AgregarMiembro(Guid equipoId, Colaborador colaborador) => ObtenerPorId(equipoId)!.AgregarColaborador(colaborador);
+        public bool EsMiembro(Guid equipoId, Guid colaboradorId) => ObtenerPorId(equipoId)?.BuscarColaborador(colaboradorId) is not null;
+        public void CrearInvitacion(Guid equipoId, Colaborador colaborador) { }
+        public IReadOnlyList<(Guid Id, Equipo Equipo)> ObtenerInvitaciones(Guid colaboradorId) => Array.Empty<(Guid, Equipo)>();
+        public void AceptarInvitacion(Guid invitacionId, Guid colaboradorId) => throw new NotImplementedException();
 
         public void Actualizar(Equipo equipo) { }
 
@@ -145,7 +151,7 @@ namespace CalendarioBackend.Tests
             _autenticacionService.RegistrarUsuario(usuarioExistente, "Clave123");
 
             // Cuando / Entonces
-            Assert.Throws<InvalidOperationException>(() => 
+            Assert.Throws<InvalidOperationException>(() =>
                 _autenticacionService.RegistrarUsuario(usuarioExistente, "OtraClave456")
             );
         }

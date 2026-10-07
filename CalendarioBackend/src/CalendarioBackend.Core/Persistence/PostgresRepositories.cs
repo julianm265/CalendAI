@@ -41,8 +41,10 @@ public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRe
 {
     public Equipo Agregar(Equipo equipo)
     {
-        db.Equipos.Add(new EquipoRow { Id = equipo.Id, Nombre = equipo.NombreEquipo, EsPersonal = equipo.EsPersonal });
+        db.Equipos.Add(new EquipoRow { Id = equipo.Id, Nombre = equipo.NombreEquipo, EsPersonal = equipo.EsPersonal, LiderId = equipo.LiderId });
         db.Calendarios.Add(new CalendarioRow { Id = equipo.Calendario.Id, EquipoId = equipo.Id });
+        foreach (var colaborador in equipo.LColaboradores)
+            db.EquipoMiembros.Add(new EquipoMiembroRow { EquipoId = equipo.Id, ColaboradorId = colaborador.Id });
         db.SaveChanges();
         return equipo;
     }
@@ -54,6 +56,7 @@ public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRe
         var equipoRow = db.Equipos.FirstOrDefault(row => row.Id == equipo.Id)
             ?? throw new KeyNotFoundException($"No se encontró el equipo con id '{equipo.Id}'.");
         equipoRow.Nombre = equipo.NombreEquipo;
+        equipoRow.LiderId = equipo.LiderId;
 
         SincronizarColaboradores(equipo);
         SincronizarEventos(equipo);
@@ -147,11 +150,67 @@ public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRe
     public Equipo CrearCalendarioPersonal(Colaborador colaborador)
     {
         var equipo = new Equipo($"Calendario de {colaborador.Usuario}", true);
-        db.Equipos.Add(new EquipoRow { Id = equipo.Id, Nombre = equipo.NombreEquipo, EsPersonal = true });
+        db.Equipos.Add(new EquipoRow { Id = equipo.Id, Nombre = equipo.NombreEquipo, EsPersonal = true, LiderId = colaborador.Id });
         db.Calendarios.Add(new CalendarioRow { Id = equipo.Calendario.Id, EquipoId = equipo.Id });
+        db.EquipoMiembros.Add(new EquipoMiembroRow { EquipoId = equipo.Id, ColaboradorId = colaborador.Id });
         equipo.AgregarColaborador(colaborador);
         db.SaveChanges();
         return equipo;
+    }
+
+    public IReadOnlyList<Equipo> ObtenerPorColaborador(Guid colaboradorId) =>
+        db.EquipoMiembros.AsNoTracking()
+            .Where(item => item.ColaboradorId == colaboradorId)
+            .Join(db.Equipos.AsNoTracking(), item => item.EquipoId, equipo => equipo.Id, (_, equipo) => equipo)
+            .ToList()
+            .Select(Cargar)
+            .Where(equipo => equipo is not null)
+            .Cast<Equipo>()
+            .ToList();
+
+    public void AgregarMiembro(Guid equipoId, Colaborador colaborador)
+    {
+        if (!db.EquipoMiembros.Any(item => item.EquipoId == equipoId && item.ColaboradorId == colaborador.Id))
+            db.EquipoMiembros.Add(new EquipoMiembroRow { EquipoId = equipoId, ColaboradorId = colaborador.Id });
+        db.SaveChanges();
+    }
+
+    public bool EsMiembro(Guid equipoId, Guid colaboradorId) =>
+        db.EquipoMiembros.Any(item => item.EquipoId == equipoId && item.ColaboradorId == colaboradorId);
+
+    public void CrearInvitacion(Guid equipoId, Colaborador colaborador)
+    {
+        if (!db.InvitacionesEquipo.Any(item => item.EquipoId == equipoId && item.ColaboradorId == colaborador.Id))
+        {
+            db.InvitacionesEquipo.Add(new InvitacionEquipoRow
+            {
+                Id = Guid.NewGuid(), EquipoId = equipoId, ColaboradorId = colaborador.Id, CreadaEn = DateTime.UtcNow
+            });
+            db.SaveChanges();
+        }
+    }
+
+    public IReadOnlyList<(Guid Id, Equipo Equipo)> ObtenerInvitaciones(Guid colaboradorId) =>
+        db.InvitacionesEquipo.AsNoTracking()
+            .Where(item => item.ColaboradorId == colaboradorId)
+            .Join(db.Equipos.AsNoTracking(), item => item.EquipoId, equipo => equipo.Id,
+                (invitacion, equipo) => new { invitacion.Id, EquipoRow = equipo })
+            .ToList()
+            .Select(item => new { item.Id, Equipo = Cargar(item.EquipoRow) })
+            .Where(item => item.Equipo is not null)
+            .Select(item => (item.Id, item.Equipo!))
+            .ToList();
+
+    public void AceptarInvitacion(Guid invitacionId, Guid colaboradorId)
+    {
+        var invitacion = db.InvitacionesEquipo.FirstOrDefault(item => item.Id == invitacionId && item.ColaboradorId == colaboradorId)
+            ?? throw new KeyNotFoundException("No se encontró la invitación.");
+        AgregarMiembro(invitacion.EquipoId, db.Colaboradores.AsNoTracking()
+            .Where(item => item.Id == colaboradorId)
+            .Select(item => new Colaborador(item.Id, item.Usuario, item.ContraseñaHash))
+            .First());
+        db.InvitacionesEquipo.Remove(invitacion);
+        db.SaveChanges();
     }
 
     private void SincronizarColaboradores(Equipo equipo)
@@ -245,8 +304,11 @@ public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRe
         if (row is null) return null;
         var calendarioId = db.Calendarios.AsNoTracking().FirstOrDefault(item => item.EquipoId == row.Id)?.Id;
         var calendario = calendarioId is Guid id ? new Calendario(id) : new Calendario();
-        var equipo = new Equipo(row.Id, row.Nombre, calendario, row.EsPersonal);
-        foreach (var colaborador in db.Colaboradores.AsNoTracking().Where(item => item.EquipoId == row.Id))
+        var equipo = new Equipo(row.Id, row.Nombre, calendario, row.EsPersonal, row.LiderId);
+        var idsMiembros = db.EquipoMiembros.AsNoTracking().Where(item => item.EquipoId == row.Id).Select(item => item.ColaboradorId).ToList();
+        var colaboradores = db.Colaboradores.AsNoTracking()
+            .Where(item => idsMiembros.Contains(item.Id) || item.EquipoId == row.Id);
+        foreach (var colaborador in colaboradores)
             equipo.AgregarColaborador(new Colaborador(colaborador.Id, colaborador.Usuario, colaborador.ContraseñaHash));
         foreach (var evento in db.Eventos.AsNoTracking().Where(item => item.EquipoId == row.Id))
         {

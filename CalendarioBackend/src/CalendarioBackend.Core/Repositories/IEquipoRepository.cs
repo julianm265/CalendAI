@@ -21,6 +21,12 @@ public interface IEquipoRepository
     IReadOnlyList<Equipo> ObtenerTodos();
     bool Eliminar(Guid id);
     Equipo CrearCalendarioPersonal(Colaborador colaborador);
+    IReadOnlyList<Equipo> ObtenerPorColaborador(Guid colaboradorId);
+    void AgregarMiembro(Guid equipoId, Colaborador colaborador);
+    bool EsMiembro(Guid equipoId, Guid colaboradorId);
+    void CrearInvitacion(Guid equipoId, Colaborador colaborador);
+    IReadOnlyList<(Guid Id, Equipo Equipo)> ObtenerInvitaciones(Guid colaboradorId);
+    void AceptarInvitacion(Guid invitacionId, Guid colaboradorId);
 }
 
 public sealed record LugarFrecuente(string Lugar, int VecesUsado);

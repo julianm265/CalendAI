@@ -11,11 +11,12 @@ public class Equipo
     public string NombreEquipo { get; set; }
     public Calendario Calendario { get; }
     public bool EsPersonal { get; }
+    public Guid? LiderId { get; private set; }
 
     private readonly List<Colaborador> _colaboradores = new();
     public IReadOnlyList<Colaborador> LColaboradores => _colaboradores.AsReadOnly();
 
-    public Equipo(string nombreEquipo, bool esPersonal = false)
+    public Equipo(string nombreEquipo, bool esPersonal = false, Guid? liderId = null)
     {
         if (string.IsNullOrWhiteSpace(nombreEquipo))
             throw new ArgumentException("El nombre del equipo no puede estar vacío.", nameof(nombreEquipo));
@@ -24,14 +25,23 @@ public class Equipo
         NombreEquipo = nombreEquipo;
         Calendario = new Calendario();
         EsPersonal = esPersonal;
+        LiderId = liderId;
     }
 
-    internal Equipo(Guid id, string nombreEquipo, Calendario calendario, bool esPersonal = false)
+    internal Equipo(Guid id, string nombreEquipo, Calendario calendario, bool esPersonal = false, Guid? liderId = null)
     {
         Id = id;
         NombreEquipo = nombreEquipo;
         Calendario = calendario;
         EsPersonal = esPersonal;
+        LiderId = liderId;
+    }
+
+    public void DesignarLider(Guid colaboradorId)
+    {
+        if (BuscarColaborador(colaboradorId) is null)
+            throw new InvalidOperationException("El líder debe pertenecer al equipo.");
+        LiderId = colaboradorId;
     }
 
     public void AgregarColaborador(Colaborador colaborador)

@@ -38,17 +38,23 @@ public class AutenticacionService
             : null;
     }
 
+    public Colaborador? AutenticarPorUsuario(string usuario) =>
+        string.IsNullOrWhiteSpace(usuario) ? null : _colaboradorRepository?.ObtenerPorUsuario(usuario)
+            ?? _equipoRepository.ObtenerTodos().Select(equipo => equipo.BuscarColaborador(usuario))
+                .FirstOrDefault(encontrado => encontrado is not null);
+
+    public IReadOnlyList<Equipo> ObtenerEquiposDelColaborador(Colaborador colaborador) =>
+        _equipoRepository.ObtenerPorColaborador(colaborador.Id);
+
     public Equipo? ObtenerEquipoDelColaborador(Colaborador colaborador) =>
-        _equipoRepository.ObtenerTodos()
-            .FirstOrDefault(equipo => equipo.BuscarColaborador(colaborador.Id) is not null);
+        ObtenerEquiposDelColaborador(colaborador).FirstOrDefault();
 
     public Equipo ObtenerOCrearCalendarioPersonal(Colaborador colaborador)
     {
-        var equipo = ObtenerEquipoDelColaborador(colaborador);
+        var equipo = ObtenerEquiposDelColaborador(colaborador).FirstOrDefault(item => item.EsPersonal);
         if (equipo is not null) return equipo;
 
         var calendarioPersonal = _equipoRepository.CrearCalendarioPersonal(colaborador);
-        _colaboradorRepository?.AsignarAEquipo(colaborador.Id, calendarioPersonal.Id);
         return calendarioPersonal;
     }
 
