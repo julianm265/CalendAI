@@ -1,0 +1,67 @@
+@host = http://localhost:5239
+# Pega aquí el token que devuelve el login:
+@token = 
+
+### Registro (crea también el calendario personal)
+POST {{host}}/api/autenticacion/registro
+Content-Type: application/json
+
+{ "usuario": "ana", "contraseña": "Clave123" }
+
+### Login: devuelve { token, colaborador, equipo (calendario personal) }
+POST {{host}}/api/autenticacion/login
+Content-Type: application/json
+
+{ "usuario": "ana", "contraseña": "Clave123" }
+
+### Mis calendarios (personal + equipos), con mi rol en cada uno
+GET {{host}}/api/equipos
+Authorization: Bearer {{token}}
+
+### Crear un equipo (quien lo crea es el líder)
+POST {{host}}/api/equipos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "nombreEquipo": "Ventas" }
+
+### Invitar a un usuario (solo el líder)
+POST {{host}}/api/equipos/00000000-0000-0000-0000-000000000000/invitaciones
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "usuario": "luis" }
+
+### Invitaciones que recibí
+GET {{host}}/api/invitaciones
+Authorization: Bearer {{token}}
+
+### Aceptar una invitación
+POST {{host}}/api/invitaciones/00000000-0000-0000-0000-000000000000/aceptar
+Authorization: Bearer {{token}}
+
+### Importar eventos desde un PDF o Word (mejorarConIA=true usa Gemini para nombres y lugares)
+POST {{host}}/api/equipos/00000000-0000-0000-0000-000000000000/documentos/fechas?formatoFecha=auto&mejorarConIA=true
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=CalendaiBoundary
+
+--CalendaiBoundary
+Content-Disposition: form-data; name="file"; filename="agenda.docx"
+Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document
+
+< C:\ruta\a\agenda.docx
+--CalendaiBoundary--
+
+### Asistente: ¿la IA está configurada?
+GET {{host}}/api/equipos/00000000-0000-0000-0000-000000000000/asistente/estado
+Authorization: Bearer {{token}}
+
+### Asistente: proponer fechas y lugares para reunirse
+POST {{host}}/api/equipos/00000000-0000-0000-0000-000000000000/asistente/chat
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "mensajes": [ { "rol": "usuario", "texto": "Proponme una reunión para esta semana" } ],
+  "hoy": "2026-10-26"
+}

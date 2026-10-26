@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CalendAI · Iniciar sesión</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=4">
+</head>
+<body>
+<div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
+<section id="screen-login" class="screen screen-login">
+  <div class="bg-shape shape-1"></div>
+  <div class="bg-shape shape-2"></div>
+  <div class="card">
+    <div class="logo"><div class="logo-icon"></div> CalendAI</div>
+    <h1 id="auth-title">Bienvenido de vuelta</h1>
+    <p class="subtitle" id="auth-subtitle">Ingresa a tu cuenta para continuar</p>
+    <form id="form-login" class="stack-form" novalidate>
+      <div class="field">
+        <label for="login-usuario">Usuario</label>
+        <div class="input-group"><span class="icon">👤</span><input id="login-usuario" name="usuario" type="text" placeholder="tu.usuario" autocomplete="username" required></div>
+        <p class="field-error" id="login-usuario-error" role="alert"></p>
+      </div>
+      <div class="field">
+        <label for="login-password">Contraseña</label>
+        <div class="input-group"><span class="icon">🔒</span><input id="login-password" name="contraseña" type="password" placeholder="••••••••••••" autocomplete="current-password" required></div>
+        <p class="field-error" id="login-password-error" role="alert"></p>
+      </div>
+      <p class="form-error" id="login-form-error" role="alert"></p>
+      <button type="submit" class="btn-primary" id="login-submit">Iniciar sesión</button>
+    </form>
+    <div class="footer"><span id="auth-switch-text">¿No tienes usuario todavía?</span> <button type="button" class="link-btn" id="toggle-auth-mode">Regístrate</button></div>
+  </div>
+</section>
+<script type="module" src="app.js"></script>
+</body>
+</html>

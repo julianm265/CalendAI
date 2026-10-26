@@ -1,0 +1,5 @@
+[Bb]in/
+[Oo]bj/
+
+# Secretos locales (contraseña de la base de datos, claves JWT y de Gemini)
+.env

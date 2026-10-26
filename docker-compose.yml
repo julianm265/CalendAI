@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: calendai-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-calendai}
+      POSTGRES_USER: ${POSTGRES_USER:-calendai_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en el archivo .env}
+    volumes:
+      - calendai_postgres_data:/var/lib/postgresql/data
+      - ./CalendarioBackend/database:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./CalendarioBackend
+      dockerfile: src/CalendarioBackend.Api/Dockerfile
+    container_name: calendai-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Calendai: Host=postgres;Port=5432;Database=${POSTGRES_DB:-calendai};Username=${POSTGRES_USER:-calendai_user};Password=${POSTGRES_PASSWORD}
+      GooglePlaces__ApiKey: ${GOOGLE_PLACES_API_KEY:-}
+      Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      Gemini__Model: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      Jwt__Key: ${JWT_KEY:?Define JWT_KEY en el archivo .env (mínimo 32 caracteres aleatorios)}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5080:8080"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./CalendarioFrontend
+      dockerfile: Dockerfile
+    container_name: calendai-frontend
+    volumes:
+      - ./CalendarioFrontend:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    ports:
+      - "5500:80"
+    restart: unless-stopped
+
+volumes:
+  calendai_postgres_data:
