@@ -575,8 +575,11 @@ async function manejarMesSiguiente() {
 
 let temporizadorBusquedaLugar = null;
 let numeroSolicitudLugar = 0;
+let sugerenciasLugaresActivas = false;
 
 function ocultarSugerenciasLugares() {
+  sugerenciasLugaresActivas = false;
+  numeroSolicitudLugar += 1;
   const lista = qs('#evento-lugar-sugerencias');
   if (!lista) return;
   lista.hidden = true;
@@ -617,13 +620,13 @@ async function cargarSugerenciasLugares(consulta = '') {
     const lugares = consulta.trim().length >= 2
       ? await api.buscarLugares(consulta.trim())
       : await api.obtenerLugaresPreferidos(state.equipoActivo.id);
-    if (solicitud !== numeroSolicitudLugar) return;
+    if (solicitud !== numeroSolicitudLugar || !sugerenciasLugaresActivas) return;
     renderSugerenciasLugares(
       lugares,
       consulta.trim() ? 'No encontramos resultados. Revisa el texto e inténtalo de nuevo.' : 'Todavía no hay lugares frecuentes. Escribe un lugar para buscarlo.',
     );
   } catch (error) {
-    if (solicitud === numeroSolicitudLugar) {
+    if (solicitud === numeroSolicitudLugar && sugerenciasLugaresActivas) {
       renderSugerenciasLugares([], mensajeDeError(error));
     }
   }
@@ -631,6 +634,7 @@ async function cargarSugerenciasLugares(consulta = '') {
 
 function manejarEntradaLugar(event) {
   clearTimeout(temporizadorBusquedaLugar);
+  if (!sugerenciasLugaresActivas) return;
   temporizadorBusquedaLugar = setTimeout(() => cargarSugerenciasLugares(event.target.value), 250);
 }
 
@@ -652,9 +656,9 @@ function abrirDrawerEvento() {
   const form = qs('#form-evento');
   form.reset();
   qs('#evento-fecha').value = state.diaSeleccionado || fechaHoyIso();
+  ocultarSugerenciasLugares();
 
   openDrawer('event-drawer', 'event-drawer-backdrop');
-  cargarSugerenciasLugares();
 }
 
 function cerrarDrawerEvento() {
@@ -1123,8 +1127,18 @@ function inicializar() {
   if (qs('#event-drawer-backdrop')) qs('#event-drawer-backdrop').addEventListener('click', cerrarDrawerEvento);
   if (qs('#form-evento')) qs('#form-evento').addEventListener('submit', manejarSubmitEvento);
   if (qs('#evento-lugar')) {
-    qs('#evento-lugar').addEventListener('input', manejarEntradaLugar);
-    qs('#evento-lugar').addEventListener('focus', () => cargarSugerenciasLugares(qs('#evento-lugar').value));
+    const campoLugar = qs('#evento-lugar');
+    campoLugar.addEventListener('input', manejarEntradaLugar);
+    campoLugar.addEventListener('click', () => {
+      sugerenciasLugaresActivas = true;
+      cargarSugerenciasLugares(campoLugar.value);
+    });
+    campoLugar.addEventListener('blur', () => {
+      window.setTimeout(() => {
+        const contenedorLugar = campoLugar.closest('.place-field');
+        if (!contenedorLugar?.contains(document.activeElement)) ocultarSugerenciasLugares();
+      }, 0);
+    });
   }
   if (qs('#form-documento')) qs('#form-documento').addEventListener('submit', manejarSubmitDocumento);
   if (qs('#open-document-modal')) qs('#open-document-modal').addEventListener('click', abrirModalDocumento);
