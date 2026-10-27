@@ -6,7 +6,9 @@
 import * as api from './api.js';
 import { ApiError } from './api.js';
 import { normalizarEquipo, normalizarEvento, normalizarEventoDelMes, normalizarColaborador } from './normalize.js';
-import { state, setColaborador, setEquipoActivo, cerrarSesion } from './state.js';
+import {
+  state, setColaborador, setEquipoActivo, setEquiposDisponibles, setCalendarioPersonal, cerrarSesion,
+} from './state.js';
 import {
   construirCuadriculaMes, sumarMeses, formatearFechaLarga, formatearMesAño,
   formatearHoraCorta, normalizarHoraParaApi, fechaHoyIso,
@@ -105,22 +107,17 @@ function renderTopbar(vista) {
   }
 }
 
-function esMiembroDeEquipo(equipo) {
-  return equipo.colaboradores.some((colaborador) =>
-    (state.colaborador.id && colaborador.id === state.colaborador.id)
-    || colaborador.usuario.toLocaleLowerCase() === state.currentUser.toLocaleLowerCase());
-}
-
 async function cargarEquiposContexto() {
   const usuario = state.currentUser;
   const resumenes = await api.listarEquipos(usuario);
-  const resumenesNormalizados = (Array.isArray(resumenes) ? resumenes : []).map(normalizarEquipo);
-  const equipos = await Promise.all(resumenesNormalizados.map(async (equipo) =>
-    normalizarEquipo(await api.obtenerEquipo(equipo.id, usuario))));
-  const propios = equipos.filter(esMiembroDeEquipo);
-  state.calendarioPersonal = propios.find((equipo) => equipo.esPersonal)
-    || (state.equipoActivo?.esPersonal ? state.equipoActivo : state.calendarioPersonal);
-  state.equiposDisponibles = propios.filter((equipo) => !equipo.esPersonal);
+  // El endpoint ya filtra por usuario. El detalle se carga al entrar en un
+  // equipo, por lo que no debe descartarse un resumen si aún no tiene miembros.
+  const equipos = (Array.isArray(resumenes) ? resumenes : []).map(normalizarEquipo);
+  if (!state.calendarioPersonal) {
+    const personal = normalizarEquipo(await api.obtenerCalendarioPersonal(usuario));
+    setCalendarioPersonal(personal);
+  }
+  setEquiposDisponibles(equipos.filter((equipo) => !equipo.esPersonal));
 }
 
 async function toggleCalendarView(contexto) {
@@ -138,9 +135,9 @@ async function toggleCalendarView(contexto) {
     await cargarMes();
     return;
   }
-  const equipo = state.equiposDisponibles[0];
+  const equipo = state.equiposDisponibles[0] || state.ultimoEquipo;
   if (!equipo) {
-    toast('Crea un equipo desde Gestión de Equipos para empezar a colaborar.');
+    toast('No tienes un equipo disponible. Puedes crear uno desde Gestión de Equipos.');
     abrirColaboradores();
     return;
   }
@@ -233,7 +230,9 @@ async function manejarSubmitLogin(event) {
     qs('#form-login').reset();
     toast(`Bienvenido, ${colaborador.usuario}.`, 'success');
     const equipoRespuesta = respuesta?.equipo ?? respuesta?.Equipo ?? null;
-    setEquipoActivo(equipoRespuesta ? normalizarEquipo(equipoRespuesta) : null);
+    const calendarioPersonal = equipoRespuesta ? normalizarEquipo(equipoRespuesta) : null;
+    if (calendarioPersonal?.esPersonal) setCalendarioPersonal(calendarioPersonal);
+    setEquipoActivo(calendarioPersonal);
 
     // El calendario se sirve como una página HTML independiente del login.
     window.location.assign('/calendar.html');
@@ -326,7 +325,12 @@ async function manejarSubmitCrearEquipo(event) {
 }
 
 async function manejarSeleccionarEquipo(equipo, detalle = null) {
-  setEquipoActivo({ id: equipo.id, nombreEquipo: equipo.nombreEquipo });
+  const equipoSeleccionado = {
+    id: equipo.id,
+    nombreEquipo: equipo.nombreEquipo,
+    esPersonal: Boolean(equipo.esPersonal),
+  };
+  setEquipoActivo(equipoSeleccionado);
 
   if (!state.colaborador) {
     toast(`Ahora inicia sesión con un colaborador de "${equipo.nombreEquipo}".`);
@@ -334,7 +338,7 @@ async function manejarSeleccionarEquipo(equipo, detalle = null) {
     return;
   }
 
-  await irACalendario({ id: equipo.id, nombreEquipo: equipo.nombreEquipo }, detalle);
+  await irACalendario(equipoSeleccionado, detalle);
 }
 
 /* ================================== CALENDARIO ================================== */
@@ -347,17 +351,17 @@ async function irACalendario(equipo, detalleInicial = null) {
   qs('#day-events-list')?.replaceChildren();
   qs('#collab-list')?.replaceChildren();
   if (detalleInicial && !detalleInicial.esPersonal) {
-    state.equiposDisponibles = [
+    setEquiposDisponibles([
       ...state.equiposDisponibles.filter((item) => item.id !== detalleInicial.id),
       detalleInicial,
-    ];
+    ]);
     updatePermissions(rolUsuarioEnEquipo());
   }
   try {
     await cargarEquiposContexto();
   } catch (error) {
-    state.equiposDisponibles = [];
-    state.calendarioPersonal = equipo.esPersonal ? equipo : null;
+    setEquiposDisponibles(state.equiposDisponibles);
+    if (equipo.esPersonal) setCalendarioPersonal(equipo);
     toast(mensajeDeError(error), 'error');
   }
   mostrarApp('calendar');

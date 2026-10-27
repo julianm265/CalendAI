@@ -109,6 +109,12 @@ export function listarEquipos(username = '') {
   return apiFetch(`/equipos${query}`);
 }
 
+export function obtenerCalendarioPersonal(username = '') {
+  const usuario = String(username || '').trim();
+  if (!usuario) throw new TypeError('Debes iniciar sesión para obtener tu calendario personal.');
+  return apiFetch(`/equipos/personal?usuario=${encodeURIComponent(usuario)}`);
+}
+
 export function crearEquipo(nombreEquipo, currentUser) {
   const usuario = String(currentUser || '').trim();
   if (!usuario) throw new TypeError('Debes iniciar sesión para crear un equipo.');

@@ -84,6 +84,16 @@ public class EquipoService
             .ToList();
     }
 
+    public Equipo? ObtenerCalendarioPersonal(string usuario)
+    {
+        if (string.IsNullOrWhiteSpace(usuario)) return null;
+        var colaborador = _colaboradorRepository?.ObtenerPorUsuario(usuario.Trim());
+        return colaborador is null
+            ? null
+            : _equipoRepository.ObtenerTodos()
+                .FirstOrDefault(equipo => equipo.EsPersonal && equipo.BuscarColaborador(colaborador.Id) is not null);
+    }
+
     public Equipo ObtenerEquipo(Guid equipoId) => ObtenerEquipoOFallar(equipoId);
 
     private Equipo ObtenerEquipoOFallar(Guid equipoId) =>

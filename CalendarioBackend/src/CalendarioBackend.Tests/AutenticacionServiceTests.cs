@@ -219,12 +219,18 @@ namespace CalendarioBackend.Tests
                 new Equipo("Proyecto CalendAI"),
                 user,
                 "Líder");
+            var secondTeam = repository.AgregarEquipoConColaborador(
+                new Equipo("Segundo proyecto"),
+                user,
+                "Líder");
             var service = new EquipoService(repository, repository);
 
             var teams = service.ListarEquipos(user.Usuario);
 
             Assert.DoesNotContain(personal, teams);
             Assert.Contains(team, teams);
+            Assert.Contains(secondTeam, teams);
+            Assert.Equal(2, teams.Count);
         }
     }
 }

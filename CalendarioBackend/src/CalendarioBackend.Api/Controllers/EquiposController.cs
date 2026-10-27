@@ -57,6 +57,18 @@ public class EquiposController : ControllerBase
         }
     }
 
+    [HttpGet("personal")]
+    public ActionResult<EquipoDetalle> ObtenerPersonal([FromQuery] string? usuario)
+    {
+        if (string.IsNullOrWhiteSpace(usuario))
+            return BadRequest(new { error = "El nombre de usuario es obligatorio." });
+
+        var equipo = _equipoService.ObtenerCalendarioPersonal(usuario);
+        return equipo is null
+            ? NotFound(new { error = "No se encontró el calendario personal." })
+            : Ok(CrearDetalle(equipo, usuario));
+    }
+
     [HttpPost]
     public ActionResult<EquipoDetalle> Crear(CreateTeamDto request)
     {
