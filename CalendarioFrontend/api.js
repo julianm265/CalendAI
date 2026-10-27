@@ -31,6 +31,15 @@ function mensajePorEstado(status) {
   }
 }
 
+function encabezadoDeSesion() {
+  try {
+    const colaborador = JSON.parse(sessionStorage.getItem('calendarioBackend.colaborador') || 'null');
+    return colaborador?.usuario ? { 'X-Usuario': colaborador.usuario } : {};
+  } catch {
+    return {};
+  }
+}
+
 /** Intenta sacar un mensaje legible de un cuerpo de error JSON o de texto plano. */
 function mensajeDesdeBody(body, fallback) {
   if (!body) return fallback;
@@ -69,7 +78,7 @@ async function apiFetch(path, options = {}) {
         ...options,
         headers: isFormData
           ? (options.headers || {})
-          : { 'Content-Type': 'application/json', ...(options.headers || {}) },
+          : { 'Content-Type': 'application/json', ...encabezadoDeSesion(), ...(options.headers || {}) },
       });
       break;
     } catch {
@@ -102,25 +111,47 @@ async function apiFetch(path, options = {}) {
 
 /* ------------------------------- Equipos ------------------------------- */
 
-export function listarEquipos() {
-  return apiFetch('/equipos');
+export function listarEquipos(username = '') {
+  const usuario = String(username || '').trim();
+  if (!usuario) throw new TypeError('Debes iniciar sesión para listar tus equipos.');
+  const query = `?usuario=${encodeURIComponent(usuario)}`;
+  return apiFetch(`/equipos${query}`);
 }
 
-export function crearEquipo(nombreEquipo) {
+export function obtenerCalendarioPersonal(username = '') {
+  const usuario = String(username || '').trim();
+  if (!usuario) throw new TypeError('Debes iniciar sesión para obtener tu calendario personal.');
+  return apiFetch(`/equipos/personal?usuario=${encodeURIComponent(usuario)}`);
+}
+
+export function crearEquipo(nombreEquipo, currentUser) {
+  const usuario = String(currentUser || '').trim();
+  if (!usuario) throw new TypeError('Debes iniciar sesión para crear un equipo.');
+  const nombre = String(nombreEquipo || '').trim();
+  if (!nombre) throw new TypeError('El nombre del equipo es obligatorio.');
   return apiFetch('/equipos', {
     method: 'POST',
-    body: JSON.stringify({ nombreEquipo }),
+    body: JSON.stringify({ NombreEquipo: nombre, Usuario: usuario }),
   });
 }
 
-export function obtenerEquipo(id) {
-  return apiFetch(`/equipos/${encodeURIComponent(id)}`);
+export function obtenerEquipo(id, username = '') {
+  const query = username ? `?usuario=${encodeURIComponent(username)}` : '';
+  return apiFetch(`/equipos/${encodeURIComponent(id)}${query}`);
 }
 
-export function registrarColaborador(equipoId, usuario, contraseña) {
+export function agregarMiembro(equipoId, username) {
+  const usuario = username.trim();
+  if (!usuario) throw new TypeError('El nombre de usuario es obligatorio.');
   return apiFetch(`/equipos/${encodeURIComponent(equipoId)}/colaboradores`, {
     method: 'POST',
-    body: JSON.stringify({ usuario, contraseña }),
+    body: JSON.stringify({ Usuario: usuario }),
+  });
+}
+
+export function eliminarMiembro(equipoId, colaboradorId) {
+  return apiFetch(`/equipos/${encodeURIComponent(equipoId)}/colaboradores/${encodeURIComponent(colaboradorId)}`, {
+    method: 'DELETE',
   });
 }
 
@@ -170,6 +201,13 @@ export function buscarLugares(query) {
 
 export function obtenerLugaresPreferidos(equipoId, limite = 8) {
   return apiFetch(`/equipos/${encodeURIComponent(equipoId)}/lugares/preferidos?limite=${limite}`);
+}
+
+export function conversarConIA(equipoId, mensaje, historial = []) {
+  return apiFetch('/ia/chat', {
+    method: 'POST',
+    body: JSON.stringify({ equipoId, mensaje, historial }),
+  });
 }
 
 /**

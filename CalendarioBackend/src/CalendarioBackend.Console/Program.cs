@@ -3,19 +3,23 @@ using CalendarioBackend.Core.Services;
 
 // --- Composición de dependencias (a mano; en un backend real esto lo haría el contenedor de DI) ---
 IEquipoRepository equipoRepository = new InMemoryEquipoRepository();
-var equipoService = new EquipoService(equipoRepository);
+var colaboradorRepository = (IColaboradorRepository)equipoRepository;
+var equipoService = new EquipoService(equipoRepository, colaboradorRepository);
 var calendarioService = new CalendarioService(equipoRepository);
-var autenticacionService = new AutenticacionService(equipoRepository);
+var autenticacionService = new AutenticacionService(equipoRepository, colaboradorRepository);
 
 Console.WriteLine("=== Backend de Calendario ===\n");
 
-// 1. Crear un equipo (crea automáticamente su Calendario)
-var equipo = equipoService.CrearEquipo("Equipo de Desarrollo");
+// 1. Registrar al líder y crear un equipo con su Calendario
+var lider = autenticacionService.RegistrarUsuario("diego", "ClaveSegura123!");
+var equipo = equipoService.CrearEquipo("Equipo de Desarrollo", lider.Usuario);
 Console.WriteLine($"Equipo creado: {equipo.NombreEquipo} (Id: {equipo.Id})");
 
 // 2. Registrar colaboradores
-var ana = equipoService.RegistrarColaborador(equipo.Id, "ana.perez", "clave123");
-var luis = equipoService.RegistrarColaborador(equipo.Id, "luis.gomez", "otraClave456");
+var ana = autenticacionService.RegistrarUsuario("ana.perez", "clave123");
+var luis = autenticacionService.RegistrarUsuario("luis.gomez", "otraClave456");
+equipoService.AgregarMiembro(equipo.Id, ana.Usuario);
+equipoService.AgregarMiembro(equipo.Id, luis.Usuario);
 Console.WriteLine($"Colaboradores registrados: {ana.Usuario}, {luis.Usuario}\n");
 
 // 3. Autenticación

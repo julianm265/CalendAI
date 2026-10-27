@@ -38,13 +38,19 @@ public class AutenticacionService
             : null;
     }
 
-    public Equipo? ObtenerEquipoDelColaborador(Colaborador colaborador) =>
-        _equipoRepository.ObtenerTodos()
-            .FirstOrDefault(equipo => equipo.BuscarColaborador(colaborador.Id) is not null);
+    public Equipo? ObtenerEquipoDelColaborador(Colaborador colaborador)
+    {
+        var equipos = _equipoRepository.ObtenerTodos();
+        return equipos.FirstOrDefault(equipo =>
+                   equipo.EsPersonal && equipo.BuscarColaborador(colaborador.Id) is not null)
+               ?? equipos.FirstOrDefault(equipo => equipo.BuscarColaborador(colaborador.Id) is not null);
+    }
 
     public Equipo ObtenerOCrearCalendarioPersonal(Colaborador colaborador)
     {
-        var equipo = ObtenerEquipoDelColaborador(colaborador);
+        var equipo = _equipoRepository.ObtenerTodos()
+            .FirstOrDefault(actual =>
+                actual.EsPersonal && actual.BuscarColaborador(colaborador.Id) is not null);
         if (equipo is not null) return equipo;
 
         var calendarioPersonal = _equipoRepository.CrearCalendarioPersonal(colaborador);

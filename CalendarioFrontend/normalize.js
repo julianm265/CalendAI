@@ -11,6 +11,7 @@ export function normalizarColaborador(raw) {
   return {
     id: raw.id ?? raw.Id ?? null,
     usuario: raw.usuario ?? raw.Usuario ?? '',
+    rol: raw.rol ?? raw.Rol ?? 'Miembro',
   };
 }
 
@@ -18,10 +19,16 @@ export function normalizarEquipo(raw) {
   if (!raw) return null;
   const colaboradoresRaw = [raw.colaboradores, raw.Colaboradores, raw.lColaboradores, raw.LColaboradores]
     .find(Array.isArray) ?? [];
+  const cantidadRaw = raw.cantidadColaboradores ?? raw.CantidadColaboradores
+    ?? raw.colaboradores ?? raw.Colaboradores;
   return {
     id: raw.id ?? raw.Id ?? null,
     nombreEquipo: raw.nombreEquipo ?? raw.NombreEquipo ?? raw.nombre ?? raw.Nombre ?? '',
     esPersonal: raw.esPersonal ?? raw.EsPersonal ?? false,
+    rolUsuario: raw.rolUsuario ?? raw.RolUsuario ?? null,
+    cantidadColaboradores: Array.isArray(cantidadRaw)
+      ? cantidadRaw.length
+      : Number(cantidadRaw) || colaboradoresRaw.length,
     colaboradores: Array.isArray(colaboradoresRaw) ? colaboradoresRaw.map(normalizarColaborador) : [],
   };
 }

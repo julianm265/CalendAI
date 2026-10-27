@@ -31,6 +31,7 @@ La API expone, entre otras, estas rutas:
 - `DELETE /api/equipos/{id}/eventos/{eventoId}?fecha=2026-09-03`
 - `GET /api/lugares/buscar?query=Auditorio%20Central`
 - `GET /api/equipos/{id}/lugares/preferidos?limite=8`
+- `POST /api/ia/chat`
 
 ## Ejecutar todo con Docker Compose
 
@@ -74,6 +75,18 @@ dotnet user-secrets set GooglePlaces:ApiKey "TU_CLAVE_DE_GOOGLE"
 Con Docker Compose, agrega `GOOGLE_PLACES_API_KEY=TU_CLAVE_DE_GOOGLE` al archivo `.env`. La clave
 no se envía al frontend. Los lugares preferidos se calculan con los lugares de eventos guardados,
 agrupando diferencias de mayúsculas, espacios y acentos.
+
+### Asistente conversacional de CalendAI
+
+El botón **Chat IA** del frontend usa `POST /api/ia/chat`. El backend envía a Gemini solo un
+resumen del equipo autorizado (eventos de los próximos tres meses, lugares frecuentes y tendencia
+mensual); la clave nunca se entrega al navegador. Configura `GEMINI_API_KEY` (o el alias heredado
+`GEMINI_KEY`) y opcionalmente `GEMINI_MODEL` en `.env`.
+
+El cuerpo acepta `equipoId`, `mensaje` e `historial`. El usuario se identifica mediante el encabezado
+`X-Usuario`, igual que el resto de la sesión actual. El asistente puede responder consultas sobre
+la agenda, proponer horarios libres y devolver una acción `create_event`; esa acción solo se ejecuta
+en el backend después de validar pertenencia al equipo, fecha, hora, organizador y ubicación opcional.
 
 Los usuarios que solo existían en la implementación anterior en memoria no pueden recuperarse
 después de haber detenido el contenedor, porque no había un origen persistente que migrar. A

@@ -6,6 +6,7 @@ namespace CalendarioBackend.Core.Persistence;
 public sealed class CalendarioDbContext(DbContextOptions<CalendarioDbContext> options) : DbContext(options)
 {
     public DbSet<EquipoRow> Equipos => Set<EquipoRow>();
+    public DbSet<EquipoColaboradorRow> EquipoColaboradores => Set<EquipoColaboradorRow>();
     public DbSet<CalendarioRow> Calendarios => Set<CalendarioRow>();
     public DbSet<ColaboradorRow> Colaboradores => Set<ColaboradorRow>();
     public DbSet<EventoRow> Eventos => Set<EventoRow>();
@@ -18,6 +19,13 @@ public sealed class CalendarioDbContext(DbContextOptions<CalendarioDbContext> op
         modelBuilder.Entity<EquipoRow>().Property(row => row.Nombre).HasColumnName("nombre");
         modelBuilder.Entity<EquipoRow>().Property(row => row.EsPersonal).HasColumnName("es_personal");
         modelBuilder.Entity<EquipoRow>().HasIndex(row => row.Nombre).IsUnique();
+        modelBuilder.Entity<EquipoColaboradorRow>().ToTable("equipo_colaboradores");
+        modelBuilder.Entity<EquipoColaboradorRow>().HasKey(row => new { row.EquipoId, row.ColaboradorId });
+        modelBuilder.Entity<EquipoColaboradorRow>().Property(row => row.EquipoId).HasColumnName("equipo_id");
+        modelBuilder.Entity<EquipoColaboradorRow>().Property(row => row.ColaboradorId).HasColumnName("colaborador_id");
+        modelBuilder.Entity<EquipoColaboradorRow>().Property(row => row.Rol).HasColumnName("rol");
+        modelBuilder.Entity<EquipoColaboradorRow>().HasOne<EquipoRow>().WithMany().HasForeignKey(row => row.EquipoId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<EquipoColaboradorRow>().HasOne<ColaboradorRow>().WithMany().HasForeignKey(row => row.ColaboradorId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<CalendarioRow>().ToTable("calendarios");
         modelBuilder.Entity<CalendarioRow>().HasKey(row => row.Id);
         modelBuilder.Entity<CalendarioRow>().Property(row => row.Id).HasColumnName("id");
@@ -52,6 +60,13 @@ public sealed class EquipoRow
     public Guid Id { get; set; }
     public string Nombre { get; set; } = "";
     public bool EsPersonal { get; set; }
+}
+
+public sealed class EquipoColaboradorRow
+{
+    public Guid EquipoId { get; set; }
+    public Guid ColaboradorId { get; set; }
+    public string Rol { get; set; } = "Miembro";
 }
 
 public sealed class CalendarioRow

@@ -10,6 +10,10 @@ namespace CalendarioBackend.Core.Models;
 /// </summary>
 public class Colaborador
 {
+    private const int IteracionesHash = 210_000;
+    private const int LongitudSalt = 16;
+    private const int LongitudHash = 32;
+
     public Guid Id { get; }
     public string Usuario { get; private set; }
     private string ContraseñaHash { get; set; }
@@ -33,7 +37,22 @@ public class Colaborador
         ContraseñaHash = contraseñaHash;
     }
 
-    public bool ValidarContraseña(string intento) => ContraseñaHash == Hash(intento);
+    public bool ValidarContraseña(string intento)
+    {
+        if (ContraseñaHash.StartsWith("v2.", StringComparison.Ordinal))
+            return ValidarHashDerivado(intento, ContraseñaHash);
+
+        try
+        {
+            return CryptographicOperations.FixedTimeEquals(
+                Convert.FromHexString(ContraseñaHash),
+                SHA256.HashData(Encoding.UTF8.GetBytes(intento)));
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
 
     internal string ObtenerContraseñaHash() => ContraseñaHash;
 
@@ -57,8 +76,40 @@ public class Colaborador
 
     private static string Hash(string texto)
     {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(texto));
-        return Convert.ToHexString(bytes);
+        var salt = RandomNumberGenerator.GetBytes(LongitudSalt);
+        var derivado = Rfc2898DeriveBytes.Pbkdf2(
+            texto,
+            salt,
+            IteracionesHash,
+            HashAlgorithmName.SHA256,
+            LongitudHash);
+        return $"v2.{IteracionesHash}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(derivado)}";
+    }
+
+    private static bool ValidarHashDerivado(string intento, string hashPersistido)
+    {
+        var partes = hashPersistido.Split('.');
+        if (partes.Length != 4 ||
+            !int.TryParse(partes[1], out var iteraciones) ||
+            iteraciones <= 0)
+            return false;
+
+        try
+        {
+            var salt = Convert.FromBase64String(partes[2]);
+            var hashEsperado = Convert.FromBase64String(partes[3]);
+            var hashCalculado = Rfc2898DeriveBytes.Pbkdf2(
+                intento,
+                salt,
+                iteraciones,
+                HashAlgorithmName.SHA256,
+                hashEsperado.Length);
+            return CryptographicOperations.FixedTimeEquals(hashCalculado, hashEsperado);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 
     public override string ToString() => Usuario;

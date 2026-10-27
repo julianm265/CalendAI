@@ -22,8 +22,10 @@ public sealed class PostgresColaboradorRepository(CalendarioDbContext db) : ICol
         db.Colaboradores.Add(new ColaboradorRow
         {
             Id = colaborador.Id, Usuario = colaborador.Usuario,
-            ContraseñaHash = colaborador.ObtenerContraseñaHash(), EquipoId = equipoId
+            ContraseñaHash = colaborador.ObtenerContraseñaHash(), EquipoId = null
         });
+        if (equipoId is Guid id)
+            db.EquipoColaboradores.Add(new EquipoColaboradorRow { EquipoId = id, ColaboradorId = colaborador.Id });
         db.SaveChanges();
     }
 
@@ -32,6 +34,8 @@ public sealed class PostgresColaboradorRepository(CalendarioDbContext db) : ICol
         var row = db.Colaboradores.FirstOrDefault(item => item.Id == colaboradorId)
             ?? throw new KeyNotFoundException("No se encontró el colaborador.");
         row.EquipoId = equipoId;
+        if (!db.EquipoColaboradores.Any(item => item.EquipoId == equipoId && item.ColaboradorId == colaboradorId))
+            db.EquipoColaboradores.Add(new EquipoColaboradorRow { EquipoId = equipoId, ColaboradorId = colaboradorId });
         db.SaveChanges();
     }
 
@@ -45,6 +49,30 @@ public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRe
         db.Calendarios.Add(new CalendarioRow { Id = equipo.Calendario.Id, EquipoId = equipo.Id });
         db.SaveChanges();
         return equipo;
+    }
+
+    public Equipo AgregarEquipoConColaborador(Equipo equipo, Colaborador colaborador, string rol)
+    {
+        equipo.AgregarColaborador(colaborador, rol);
+        using var transaccion = db.Database.BeginTransaction();
+        db.Equipos.Add(new EquipoRow { Id = equipo.Id, Nombre = equipo.NombreEquipo, EsPersonal = false });
+        db.Calendarios.Add(new CalendarioRow { Id = equipo.Calendario.Id, EquipoId = equipo.Id });
+        db.EquipoColaboradores.Add(new EquipoColaboradorRow
+        {
+            EquipoId = equipo.Id,
+            ColaboradorId = colaborador.Id,
+            Rol = rol
+        });
+        db.SaveChanges();
+        transaccion.Commit();
+
+        var equipoPersistido = ObtenerPorId(equipo.Id)
+            ?? throw new InvalidOperationException("El equipo se guardó, pero no se pudo volver a cargar.");
+        var miembroPersistido = equipoPersistido.BuscarColaborador(colaborador.Id);
+        if (miembroPersistido is null || equipoPersistido.ObtenerRolColaborador(colaborador.Id) != rol)
+            throw new InvalidOperationException("El equipo se guardó sin persistir correctamente su miembro y rol.");
+
+        return equipoPersistido;
     }
 
     public void Guardar(Equipo equipo)
@@ -62,30 +90,31 @@ public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRe
         transaccion.Commit();
     }
 
-    public void AgregarColaborador(Guid equipoId, Colaborador colaborador)
+    public void AgregarColaborador(Guid equipoId, Colaborador colaborador, string rol = "Miembro")
     {
-        var row = db.Colaboradores.FirstOrDefault(item => item.Id == colaborador.Id);
-        if (row is null)
+        if (!db.Colaboradores.Any(item => item.Id == colaborador.Id))
+            throw new KeyNotFoundException("No se encontró el usuario registrado.");
+
+        if (db.EquipoColaboradores.Any(item => item.EquipoId == equipoId && item.ColaboradorId == colaborador.Id))
+            throw new InvalidOperationException($"El usuario '{colaborador.Usuario}' ya pertenece al equipo.");
+
+        db.EquipoColaboradores.Add(new EquipoColaboradorRow
         {
-            db.Colaboradores.Add(CrearFila(colaborador, equipoId));
-        }
-        else
-        {
-            row.EquipoId = equipoId;
-            row.Usuario = colaborador.Usuario;
-            row.ContraseñaHash = colaborador.ObtenerContraseñaHash();
-        }
+            EquipoId = equipoId,
+            ColaboradorId = colaborador.Id,
+            Rol = rol
+        });
 
         GuardarCambios();
     }
 
     public void EliminarColaborador(Guid equipoId, Guid colaboradorId)
     {
-        var row = db.Colaboradores.FirstOrDefault(item => item.Id == colaboradorId && item.EquipoId == equipoId);
+        var row = db.EquipoColaboradores.FirstOrDefault(item => item.ColaboradorId == colaboradorId && item.EquipoId == equipoId);
         if (row is null)
             return;
 
-        db.Colaboradores.Remove(row);
+        db.EquipoColaboradores.Remove(row);
         GuardarCambios();
     }
 
@@ -150,31 +179,28 @@ public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRe
         db.Equipos.Add(new EquipoRow { Id = equipo.Id, Nombre = equipo.NombreEquipo, EsPersonal = true });
         db.Calendarios.Add(new CalendarioRow { Id = equipo.Calendario.Id, EquipoId = equipo.Id });
         equipo.AgregarColaborador(colaborador);
+        db.EquipoColaboradores.Add(new EquipoColaboradorRow
+        {
+            EquipoId = equipo.Id,
+            ColaboradorId = colaborador.Id,
+            Rol = "Miembro"
+        });
         db.SaveChanges();
         return equipo;
     }
 
     private void SincronizarColaboradores(Equipo equipo)
     {
-        var filas = db.Colaboradores.Where(row => row.EquipoId == equipo.Id).ToDictionary(row => row.Id);
+        var filas = db.EquipoColaboradores.Where(row => row.EquipoId == equipo.Id)
+            .ToDictionary(row => row.ColaboradorId);
 
         foreach (var colaborador in equipo.LColaboradores)
         {
-            if (filas.Remove(colaborador.Id, out var fila))
-            {
-                fila.Usuario = colaborador.Usuario;
-                fila.ContraseñaHash = colaborador.ObtenerContraseñaHash();
-                continue;
-            }
-
-            var existente = db.Colaboradores.FirstOrDefault(row => row.Id == colaborador.Id);
-            if (existente is null)
-                db.Colaboradores.Add(CrearFila(colaborador, equipo.Id));
-            else
-                existente.EquipoId = equipo.Id;
+            if (filas.Remove(colaborador.Id)) continue;
+            db.EquipoColaboradores.Add(new EquipoColaboradorRow { EquipoId = equipo.Id, ColaboradorId = colaborador.Id });
         }
 
-        db.Colaboradores.RemoveRange(filas.Values);
+        db.EquipoColaboradores.RemoveRange(filas.Values);
     }
 
     private void SincronizarEventos(Equipo equipo)
@@ -246,8 +272,14 @@ public sealed class PostgresEquipoRepository(CalendarioDbContext db) : IEquipoRe
         var calendarioId = db.Calendarios.AsNoTracking().FirstOrDefault(item => item.EquipoId == row.Id)?.Id;
         var calendario = calendarioId is Guid id ? new Calendario(id) : new Calendario();
         var equipo = new Equipo(row.Id, row.Nombre, calendario, row.EsPersonal);
-        foreach (var colaborador in db.Colaboradores.AsNoTracking().Where(item => item.EquipoId == row.Id))
-            equipo.AgregarColaborador(new Colaborador(colaborador.Id, colaborador.Usuario, colaborador.ContraseñaHash));
+        var colaboradores = from relacion in db.EquipoColaboradores.AsNoTracking()
+                            join colaborador in db.Colaboradores.AsNoTracking() on relacion.ColaboradorId equals colaborador.Id
+                            where relacion.EquipoId == row.Id
+                            select new { Colaborador = colaborador, relacion.Rol };
+        foreach (var item in colaboradores)
+            equipo.AgregarColaborador(
+                new Colaborador(item.Colaborador.Id, item.Colaborador.Usuario, item.Colaborador.ContraseñaHash),
+                item.Rol);
         foreach (var evento in db.Eventos.AsNoTracking().Where(item => item.EquipoId == row.Id))
         {
             var dia = equipo.Calendario.ObtenerOCrearAño(evento.Fecha.Year).BuscarDia(evento.Fecha)!;

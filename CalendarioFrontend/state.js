@@ -7,6 +7,9 @@
 const STORAGE_KEYS = {
   colaborador: 'calendarioBackend.colaborador',
   equipoActivo: 'calendarioBackend.equipoActivo',
+  ultimoEquipo: 'calendarioBackend.ultimoEquipo',
+  equiposDisponibles: 'calendarioBackend.equiposDisponibles',
+  calendarioPersonal: 'calendarioBackend.calendarioPersonal',
 };
 
 function leerJson(key) {
@@ -33,8 +36,14 @@ function escribirJson(key, value) {
 
 export const state = {
   colaborador: leerJson(STORAGE_KEYS.colaborador), // { id, usuario } | null
+  get currentUser() {
+    return this.colaborador?.usuario || '';
+  },
   equipoActivo: leerJson(STORAGE_KEYS.equipoActivo), // { id, nombreEquipo } | null
+  ultimoEquipo: leerJson(STORAGE_KEYS.ultimoEquipo), // último equipo de colaboración seleccionado
   equipoActivoDetalle: null, // equipo completo con colaboradores, refrescado al entrar al calendario
+  calendarioPersonal: leerJson(STORAGE_KEYS.calendarioPersonal),
+  equiposDisponibles: leerJson(STORAGE_KEYS.equiposDisponibles) || [],
   vista: { año: null, mes: null }, // mes visible actualmente en el calendario (mes: 1-12)
   diaSeleccionado: null, // 'YYYY-MM-DD'
   eventosDelMes: new Map(), // 'YYYY-MM-DD' -> cantidad de eventos (para los puntos en la cuadrícula)
@@ -48,12 +57,32 @@ export function setColaborador(colaborador) {
 export function setEquipoActivo(equipo) {
   state.equipoActivo = equipo;
   escribirJson(STORAGE_KEYS.equipoActivo, equipo);
+  if (equipo && !equipo.esPersonal) {
+    state.ultimoEquipo = equipo;
+    escribirJson(STORAGE_KEYS.ultimoEquipo, equipo);
+  }
+}
+
+export function setEquiposDisponibles(equipos) {
+  state.equiposDisponibles = Array.isArray(equipos) ? equipos : [];
+  escribirJson(STORAGE_KEYS.equiposDisponibles, state.equiposDisponibles);
+}
+
+export function setCalendarioPersonal(equipo) {
+  state.calendarioPersonal = equipo || null;
+  escribirJson(STORAGE_KEYS.calendarioPersonal, state.calendarioPersonal);
 }
 
 export function cerrarSesion() {
   state.colaborador = null;
   state.equipoActivo = null;
+  state.ultimoEquipo = null;
   state.equipoActivoDetalle = null;
+  state.calendarioPersonal = null;
+  state.equiposDisponibles = [];
   escribirJson(STORAGE_KEYS.colaborador, null);
   escribirJson(STORAGE_KEYS.equipoActivo, null);
+  escribirJson(STORAGE_KEYS.ultimoEquipo, null);
+  escribirJson(STORAGE_KEYS.equiposDisponibles, null);
+  escribirJson(STORAGE_KEYS.calendarioPersonal, null);
 }

@@ -36,6 +36,12 @@ builder.Services.AddHttpClient("GooglePlaces", client =>
     client.Timeout = TimeSpan.FromSeconds(8);
 });
 builder.Services.AddScoped<IGooglePlacesService, GooglePlacesService>();
+builder.Services.AddHttpClient("Gemini", client =>
+{
+    client.BaseAddress = new Uri("https://generativelanguage.googleapis.com/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddScoped<GeminiAssistantService>();
 
 var app = builder.Build();
 
@@ -44,7 +50,69 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<CalendarioDbContext>();
     db.Database.EnsureCreated();
     db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS equipos ADD COLUMN IF NOT EXISTS es_personal boolean NOT NULL DEFAULT false");
+    db.Database.ExecuteSqlRaw("""
+        ALTER TABLE IF EXISTS colaboradores
+        ADD COLUMN IF NOT EXISTS equipo_id uuid NULL
+        """);
     db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS colaboradores ALTER COLUMN equipo_id DROP NOT NULL");
+    db.Database.ExecuteSqlRaw("""
+        CREATE TABLE IF NOT EXISTS equipo_colaboradores (
+            equipo_id uuid NOT NULL REFERENCES equipos(id) ON DELETE CASCADE,
+            colaborador_id uuid NOT NULL REFERENCES colaboradores(id) ON DELETE CASCADE,
+            rol varchar(20) NOT NULL DEFAULT 'Miembro',
+            PRIMARY KEY (equipo_id, colaborador_id)
+        )
+        """);
+    db.Database.ExecuteSqlRaw(
+        "ALTER TABLE equipo_colaboradores ADD COLUMN IF NOT EXISTS rol varchar(20) NOT NULL DEFAULT 'Miembro'");
+    db.Database.ExecuteSqlRaw("""
+        CREATE INDEX IF NOT EXISTS ix_equipo_colaboradores_colaborador_id
+        ON equipo_colaboradores (colaborador_id)
+        """);
+    db.Database.ExecuteSqlRaw("""
+        INSERT INTO equipo_colaboradores (equipo_id, colaborador_id)
+        SELECT equipo_id, id FROM colaboradores WHERE equipo_id IS NOT NULL
+        ON CONFLICT DO NOTHING
+        """);
+    db.Database.ExecuteSqlRaw("""
+        DO $migration$
+        BEGIN
+            IF to_regclass('public.equipo_miembros') IS NOT NULL THEN
+                INSERT INTO equipo_colaboradores (equipo_id, colaborador_id)
+                SELECT equipo_id, colaborador_id
+                FROM equipo_miembros
+                ON CONFLICT DO NOTHING;
+            END IF;
+            IF to_regclass('public.membresias') IS NOT NULL THEN
+                INSERT INTO equipo_colaboradores (equipo_id, colaborador_id, rol)
+                SELECT equipo_id, colaborador_id, COALESCE(rol, 'Miembro')
+                FROM membresias
+                ON CONFLICT DO NOTHING;
+            END IF;
+        END
+        $migration$
+        """);
+    db.Database.ExecuteSqlRaw("UPDATE colaboradores SET equipo_id = NULL WHERE equipo_id IS NOT NULL");
+    db.Database.ExecuteSqlRaw("""
+        WITH primer_miembro AS (
+            SELECT DISTINCT ON (relacion.equipo_id)
+                relacion.equipo_id,
+                relacion.colaborador_id
+            FROM equipo_colaboradores AS relacion
+            JOIN equipos AS equipo ON equipo.id = relacion.equipo_id
+            WHERE equipo.es_personal = false
+            ORDER BY relacion.equipo_id, relacion.colaborador_id
+        )
+        UPDATE equipo_colaboradores AS relacion
+        SET rol = 'Líder'
+        FROM primer_miembro
+        WHERE relacion.equipo_id = primer_miembro.equipo_id
+          AND relacion.colaborador_id = primer_miembro.colaborador_id
+          AND NOT EXISTS (
+              SELECT 1 FROM equipo_colaboradores AS lider
+              WHERE lider.equipo_id = relacion.equipo_id AND lider.rol = 'Líder'
+          )
+        """);
 }
 
 app.UseRouting();
@@ -56,7 +124,7 @@ app.Use(async (context, next) =>
     if (context.Request.Headers.TryGetValue("Origin", out var origin))
     {
         context.Response.Headers["Access-Control-Allow-Origin"] = origin.ToString();
-        context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type";
+        context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, X-Usuario";
         context.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,DELETE,OPTIONS";
         context.Response.Headers["Vary"] = "Origin";
     }
