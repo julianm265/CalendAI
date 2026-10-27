@@ -31,6 +31,15 @@ function mensajePorEstado(status) {
   }
 }
 
+function encabezadoDeSesion() {
+  try {
+    const colaborador = JSON.parse(sessionStorage.getItem('calendarioBackend.colaborador') || 'null');
+    return colaborador?.usuario ? { 'X-Usuario': colaborador.usuario } : {};
+  } catch {
+    return {};
+  }
+}
+
 /** Intenta sacar un mensaje legible de un cuerpo de error JSON o de texto plano. */
 function mensajeDesdeBody(body, fallback) {
   if (!body) return fallback;
@@ -69,7 +78,7 @@ async function apiFetch(path, options = {}) {
         ...options,
         headers: isFormData
           ? (options.headers || {})
-          : { 'Content-Type': 'application/json', ...(options.headers || {}) },
+          : { 'Content-Type': 'application/json', ...encabezadoDeSesion(), ...(options.headers || {}) },
       });
       break;
     } catch {
@@ -192,6 +201,13 @@ export function buscarLugares(query) {
 
 export function obtenerLugaresPreferidos(equipoId, limite = 8) {
   return apiFetch(`/equipos/${encodeURIComponent(equipoId)}/lugares/preferidos?limite=${limite}`);
+}
+
+export function conversarConIA(equipoId, mensaje, historial = []) {
+  return apiFetch('/ia/chat', {
+    method: 'POST',
+    body: JSON.stringify({ equipoId, mensaje, historial }),
+  });
 }
 
 /**

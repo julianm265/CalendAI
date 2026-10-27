@@ -98,11 +98,15 @@ public class EquiposController : ControllerBase
     [HttpPost("{id:guid}/colaboradores")]
     public ActionResult<ColaboradorResumen> AgregarMiembro(
         Guid id,
-        AddMemberDto request)
+        AddMemberDto request,
+        [FromHeader(Name = "X-Usuario")] string? usuarioInvitador)
     {
         try
         {
-            var colaborador = _equipoService.AgregarMiembro(id, request.Usuario);
+            if (string.IsNullOrWhiteSpace(usuarioInvitador))
+                return Unauthorized(new { error = "La sesión del líder es obligatoria para invitar usuarios." });
+
+            var colaborador = _equipoService.AgregarMiembro(id, request.Usuario, usuarioInvitador);
             return Ok(new ColaboradorResumen(colaborador.Id, colaborador.Usuario, "Miembro"));
         }
         catch (KeyNotFoundException)
@@ -112,6 +116,10 @@ public class EquiposController : ControllerBase
         catch (ArgumentException exception)
         {
             return BadRequest(new { error = exception.Message });
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return Unauthorized(new { error = exception.Message });
         }
         catch (InvalidOperationException exception)
         {

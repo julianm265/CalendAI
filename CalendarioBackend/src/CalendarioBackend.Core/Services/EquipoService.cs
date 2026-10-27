@@ -34,11 +34,20 @@ public class EquipoService
         return _equipoRepository.AgregarEquipoConColaborador(equipo, creador, "Líder");
     }
 
-    public Colaborador AgregarMiembro(Guid equipoId, string usuario)
+    public Colaborador AgregarMiembro(Guid equipoId, string usuario, string? usuarioInvitador = null)
     {
         var equipo = ObtenerEquipoOFallar(equipoId);
         if (equipo.EsPersonal)
             throw new InvalidOperationException("No se pueden agregar miembros a un calendario personal.");
+
+        if (!string.IsNullOrWhiteSpace(usuarioInvitador))
+        {
+            var invitador = equipo.BuscarColaborador(usuarioInvitador.Trim())
+                ?? throw new UnauthorizedAccessException("El usuario actual no pertenece a este equipo.");
+            if (!string.Equals(equipo.ObtenerRolColaborador(invitador.Id), "Líder", StringComparison.OrdinalIgnoreCase))
+                throw new UnauthorizedAccessException("Solo el líder del equipo puede invitar usuarios.");
+        }
+
         var colaborador = _colaboradorRepository?.ObtenerPorUsuario(usuario)
             ?? throw new KeyNotFoundException($"No se encontró un usuario registrado con el nombre '{usuario}'.");
 

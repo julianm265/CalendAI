@@ -118,7 +118,7 @@
   <form id="form-evento" class="drawer-form" novalidate>
     <div class="field"><label for="evento-fecha">Fecha</label><input id="evento-fecha" type="date" required><p class="field-error" id="evento-fecha-error" role="alert"></p></div>
     <div class="field"><label for="evento-nombre">Nombre del evento</label><input id="evento-nombre" type="text" required maxlength="120"><p class="field-error" id="evento-nombre-error" role="alert"></p></div>
-    <div class="field-row"><div class="field"><label for="evento-hora">Hora</label><input id="evento-hora" type="time" required><p class="field-error" id="evento-hora-error" role="alert"></p></div><div class="field place-field"><label for="evento-lugar">Lugar</label><input id="evento-lugar" type="text" required maxlength="120" autocomplete="off" placeholder="Busca un lugar..." aria-controls="evento-lugar-sugerencias" aria-describedby="evento-lugar-ayuda" aria-expanded="false"><ul id="evento-lugar-sugerencias" class="place-suggestions" hidden role="listbox"></ul><p id="evento-lugar-ayuda" class="place-hint">Escribe al menos 2 caracteres para buscar.</p><p class="field-error" id="evento-lugar-error" role="alert"></p></div></div>
+    <div class="field-row"><div class="field"><label for="evento-hora">Hora</label><input id="evento-hora" type="time" required><p class="field-error" id="evento-hora-error" role="alert"></p></div><div class="field place-field"><label for="evento-lugar">Lugar <span class="optional">(opcional)</span></label><input id="evento-lugar" type="text" maxlength="120" autocomplete="off" placeholder="Busca un lugar..." aria-controls="evento-lugar-sugerencias" aria-describedby="evento-lugar-ayuda" aria-expanded="false"><ul id="evento-lugar-sugerencias" class="place-suggestions" hidden role="listbox"></ul><p id="evento-lugar-ayuda" class="place-hint">Puedes dejarlo vacío o escribir al menos 2 caracteres para buscar.</p><p class="field-error" id="evento-lugar-error" role="alert"></p></div></div>
     <div class="field"><label for="evento-descripcion">Descripción <span class="optional">(opcional)</span></label><textarea id="evento-descripcion" rows="3" maxlength="500"></textarea></div>
     <div class="field"><label for="evento-organizador">Organizador <span class="optional">(opcional)</span></label><select id="evento-organizador"><option value="">Sin asignar</option></select></div>
     <p class="form-error" id="evento-form-error" role="alert"></p>
@@ -159,6 +159,6 @@
 </aside>
 <div class="drawer-backdrop" id="confirm-backdrop" hidden></div>
 <div class="confirm-dialog" id="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message" hidden><h2 id="confirm-title">¿Eliminar evento?</h2><p id="confirm-message"></p><div class="confirm-actions"><button type="button" class="btn btn-ghost" id="confirm-cancel">Cancelar</button><button type="button" class="btn btn-danger" id="confirm-accept">Eliminar</button></div></div>
-<script type="module" src="app.js"></script>
+<script type="module" src="app.js?v=7"></script>
 </body>
 </html>

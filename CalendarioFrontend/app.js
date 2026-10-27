@@ -686,7 +686,10 @@ async function manejarSubmitEvento(event) {
   if (!fecha) { setFieldError('evento-fecha', 'Selecciona una fecha.'); valido = false; }
   if (!nombreEvento) { setFieldError('evento-nombre', 'Escribe un nombre para el evento.'); valido = false; }
   if (!hora) { setFieldError('evento-hora', 'Selecciona una hora.'); valido = false; }
-  if (!lugar) { setFieldError('evento-lugar', 'Escribe un lugar.'); valido = false; }
+  if (lugar && lugar.length < 2) {
+    setFieldError('evento-lugar', 'Escribe al menos 2 caracteres.');
+    valido = false;
+  }
   if (!valido) return;
 
   const boton = qs('#submit-event');
@@ -826,11 +829,51 @@ function manejarTeclaChatIA(event) {
   if (event.key === 'Escape' && !qs('#ai-chat-panel')?.hidden) cerrarChatIA();
 }
 
-function manejarSubmitChatIA(event) {
+let historialChatIA = [];
+
+function agregarMensajeChatIA(texto, tipo) {
+  const mensajes = qs('.ai-chat-messages');
+  if (!mensajes) return;
+  const burbuja = ce('p', { class: `ai-chat-message ai-chat-message-${tipo}` }, texto);
+  mensajes.appendChild(burbuja);
+  mensajes.scrollTop = mensajes.scrollHeight;
+}
+
+async function manejarSubmitChatIA(event) {
   event.preventDefault();
   const input = qs('#ai-chat-input');
-  if (!input.value.trim()) return;
-  toast('El chat IA aún no está conectado a un servicio.', 'error');
+  const mensaje = input.value.trim();
+  if (!mensaje || !state.equipoActivo?.id || !state.colaborador) return;
+
+  input.value = '';
+  agregarMensajeChatIA(mensaje, 'user');
+  const boton = qs('#ai-chat-form button[type="submit"]');
+  setButtonLoading(boton, true, '…');
+  try {
+    const respuesta = await api.conversarConIA(
+      state.equipoActivo.id,
+      mensaje,
+      historialChatIA,
+    );
+    historialChatIA.push({ role: 'user', content: mensaje });
+    historialChatIA.push({ role: 'model', content: respuesta.reply });
+    agregarMensajeChatIA(respuesta.reply, 'assistant');
+    if (respuesta.action?.type === 'event_created') {
+      toast('Evento agendado por el asistente.', 'success');
+      if (respuesta.action.fecha) {
+        const [año, mes] = respuesta.action.fecha.split('-').map(Number);
+        if (año && mes) {
+          state.vista = { año, mes };
+          state.diaSeleccionado = respuesta.action.fecha;
+        }
+      }
+      await cargarMes();
+    }
+  } catch (error) {
+    agregarMensajeChatIA(error instanceof ApiError ? error.message : 'No pude procesar tu solicitud.', 'assistant');
+  } finally {
+    setButtonLoading(boton, false);
+  }
 }
 
 /** Texto de aviso sobre cómo se interpretaron las fechas del documento. */
@@ -1087,7 +1130,7 @@ async function manejarCrearEquipoDesdeCalendario(event) {
     const equipo = normalizarEquipo(await api.crearEquipo(nombre, state.currentUser));
     input.value = '';
     setFieldSuccess('nuevo-equipo-nombre', 'Equipo creado exitosamente.');
-    await manejarSeleccionarEquipo(equipo, equipo);
+    await manejarSeleccionarEquipo(equipo);
     await cargarColaboradores();
   } catch (error) {
     setFieldError('nuevo-equipo-nombre', mensajeDeError(error));

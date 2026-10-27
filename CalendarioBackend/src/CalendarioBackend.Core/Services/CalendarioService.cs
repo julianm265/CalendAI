@@ -18,7 +18,7 @@ public class CalendarioService
     }
 
     public Evento AgregarEvento(Guid equipoId, DateOnly fecha, string nombreEvento, TimeOnly hora,
-        string lugar, string? descripcion = null, Guid? colaboradorOrganizadorId = null)
+        string? lugar, string? descripcion = null, Guid? colaboradorOrganizadorId = null)
     {
         var equipo = ObtenerEquipoOFallar(equipoId);
 

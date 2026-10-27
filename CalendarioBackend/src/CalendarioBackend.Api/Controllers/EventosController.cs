@@ -96,7 +96,7 @@ public sealed record AgregarEventoRequest(
     DateOnly Fecha,
     string NombreEvento,
     TimeOnly Hora,
-    string Lugar,
+    string? Lugar,
     string? Descripcion,
     Guid? ColaboradorOrganizadorId);
 

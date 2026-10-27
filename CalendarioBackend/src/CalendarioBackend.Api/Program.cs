@@ -36,6 +36,12 @@ builder.Services.AddHttpClient("GooglePlaces", client =>
     client.Timeout = TimeSpan.FromSeconds(8);
 });
 builder.Services.AddScoped<IGooglePlacesService, GooglePlacesService>();
+builder.Services.AddHttpClient("Gemini", client =>
+{
+    client.BaseAddress = new Uri("https://generativelanguage.googleapis.com/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddScoped<GeminiAssistantService>();
 
 var app = builder.Build();
 
@@ -44,6 +50,10 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<CalendarioDbContext>();
     db.Database.EnsureCreated();
     db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS equipos ADD COLUMN IF NOT EXISTS es_personal boolean NOT NULL DEFAULT false");
+    db.Database.ExecuteSqlRaw("""
+        ALTER TABLE IF EXISTS colaboradores
+        ADD COLUMN IF NOT EXISTS equipo_id uuid NULL
+        """);
     db.Database.ExecuteSqlRaw("ALTER TABLE IF EXISTS colaboradores ALTER COLUMN equipo_id DROP NOT NULL");
     db.Database.ExecuteSqlRaw("""
         CREATE TABLE IF NOT EXISTS equipo_colaboradores (
@@ -63,6 +73,24 @@ using (var scope = app.Services.CreateScope())
         INSERT INTO equipo_colaboradores (equipo_id, colaborador_id)
         SELECT equipo_id, id FROM colaboradores WHERE equipo_id IS NOT NULL
         ON CONFLICT DO NOTHING
+        """);
+    db.Database.ExecuteSqlRaw("""
+        DO $migration$
+        BEGIN
+            IF to_regclass('public.equipo_miembros') IS NOT NULL THEN
+                INSERT INTO equipo_colaboradores (equipo_id, colaborador_id)
+                SELECT equipo_id, colaborador_id
+                FROM equipo_miembros
+                ON CONFLICT DO NOTHING;
+            END IF;
+            IF to_regclass('public.membresias') IS NOT NULL THEN
+                INSERT INTO equipo_colaboradores (equipo_id, colaborador_id, rol)
+                SELECT equipo_id, colaborador_id, COALESCE(rol, 'Miembro')
+                FROM membresias
+                ON CONFLICT DO NOTHING;
+            END IF;
+        END
+        $migration$
         """);
     db.Database.ExecuteSqlRaw("UPDATE colaboradores SET equipo_id = NULL WHERE equipo_id IS NOT NULL");
     db.Database.ExecuteSqlRaw("""
@@ -96,7 +124,7 @@ app.Use(async (context, next) =>
     if (context.Request.Headers.TryGetValue("Origin", out var origin))
     {
         context.Response.Headers["Access-Control-Allow-Origin"] = origin.ToString();
-        context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type";
+        context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, X-Usuario";
         context.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,DELETE,OPTIONS";
         context.Response.Headers["Vary"] = "Origin";
     }
