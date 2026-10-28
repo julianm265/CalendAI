@@ -6,8 +6,8 @@
 <title>CalendAI · Calendario</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=5">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body class="calendar-page">
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -24,33 +24,56 @@
         <section class="sidebar-card mini-calendar-card" aria-label="Calendario mensual">
           <div class="mini-header">
             <button type="button" class="icon-btn" id="prev-month" aria-label="Mes anterior">‹</button>
-            <h1 id="month-label" class="month-label" aria-live="polite"></h1>
+            <h2 id="month-label" class="month-label" aria-live="polite"></h2>
             <button type="button" class="icon-btn" id="next-month" aria-label="Mes siguiente">›</button>
           </div>
-          <div class="weekday-row mini-weekday-row" aria-hidden="true"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div>
+          <div class="weekday-row mini-weekday-row" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
           <div id="calendar-grid" class="calendar-grid mini-grid" role="grid" aria-label="Días del mes"></div>
         </section>
         <section class="sidebar-card import-shortcut-card" aria-label="Importar eventos">
-          <h2>¿Tienes fechas en un documento?</h2>
+          <span class="shortcut-icon" aria-hidden="true">▤</span>
+          <h2>Importa documentos</h2>
           <p>Detecta eventos desde un PDF o Word.</p>
           <button type="button" class="btn btn-secondary" id="open-document-modal">Importar documento</button>
         </section>
+        <section class="sidebar-card import-shortcut-card chat-shortcut-card" aria-label="Chat con CalendAI">
+          <span class="shortcut-icon" aria-hidden="true">✦</span>
+          <h2>Chat IA</h2>
+          <p>Organiza tu agenda conversando con CalendAI.</p>
+          <button type="button" class="btn btn-secondary" id="open-ai-chat" aria-label="Abrir chat con CalendAI" aria-expanded="false">Chatear con la IA</button>
+        </section>
       </aside>
       <main id="main" class="day-panel main-card">
+        <div class="calendar-intro">
+          <p class="calendar-eyebrow" id="day-panel-title">Selecciona un día</p>
+          <h1>Tu día, organizado.</h1>
+          <p class="calendar-intro-copy">Todo lo que necesitas para aprovechar mejor tu tiempo.</p>
+        </div>
         <div class="calendar-toolbar">
-          <div>
-            <p class="calendar-eyebrow">Tu agenda</p>
-            <h2 id="day-panel-title">Selecciona un día</h2>
-          </div>
           <div class="calendar-toolbar-actions">
-            <button type="button" class="btn btn-secondary" id="open-document-modal-main">Importar documento</button>
-            <button type="button" class="btn btn-primary" id="open-new-event">+ Nuevo evento</button>
+            <label class="event-search">
+              <span aria-hidden="true">⌕</span>
+              <span class="sr-only">Buscar eventos</span>
+              <input id="event-search" type="search" placeholder="Buscar eventos..." autocomplete="off">
+            </label>
+            <div class="events-today-card" aria-live="polite">
+              <span id="today-event-count" class="events-today-count">0</span>
+              <span>Eventos hoy</span>
+            </div>
+            <button type="button" class="btn btn-primary" id="open-new-event">+ Crear evento</button>
           </div>
         </div>
         <div id="calendar-status" class="status-block" hidden></div>
         <div id="day-panel-status" class="status-block" hidden></div>
+        <div class="agenda-heading">
+          <div>
+            <p class="calendar-eyebrow">TU AGENDA</p>
+            <h2>Eventos del día</h2>
+          </div>
+          <button type="button" class="btn btn-secondary" id="open-new-event-day" hidden>+ Agregar evento este día</button>
+        </div>
         <ul id="day-events-list" class="events-list"></ul>
-        <button type="button" class="btn btn-secondary" id="open-new-event-day" hidden>+ Agregar evento este día</button>
+        <p id="event-search-empty" class="event-search-empty" hidden>No hay eventos que coincidan con tu búsqueda.</p>
       </main>
     </div>
   </section>
@@ -96,7 +119,6 @@
     </div>
   </div>
 </section>
-<button type="button" class="ai-chat-toggle" id="open-ai-chat" aria-label="Abrir chat con CalendAI" aria-expanded="false">✦<span>Chat IA</span></button>
 <div class="ai-chat-backdrop" id="ai-chat-backdrop" hidden></div>
 <aside class="ai-chat-panel" id="ai-chat-panel" role="dialog" aria-modal="true" aria-labelledby="ai-chat-title" hidden>
   <div class="drawer-header">
@@ -117,8 +139,8 @@
     <button type="submit" class="btn btn-primary" aria-label="Enviar mensaje">↑</button>
   </form>
 </aside>
-<div class="drawer-backdrop" id="event-drawer-backdrop" hidden></div>
-<aside class="drawer" id="event-drawer" role="dialog" aria-modal="true" aria-labelledby="event-drawer-title" hidden>
+<div class="drawer-backdrop event-modal-backdrop" id="event-drawer-backdrop" hidden></div>
+<aside class="drawer event-modal" id="event-drawer" role="dialog" aria-modal="true" aria-labelledby="event-drawer-title" hidden>
   <div class="drawer-header"><h2 id="event-drawer-title">Nuevo evento</h2><button type="button" class="icon-btn" id="close-event-drawer" aria-label="Cerrar">×</button></div>
   <form id="form-evento" class="drawer-form" novalidate>
     <div class="field"><label for="evento-fecha">Fecha</label><input id="evento-fecha" type="date" required><p class="field-error" id="evento-fecha-error" role="alert"></p></div>
@@ -164,6 +186,6 @@
 </aside>
 <div class="drawer-backdrop" id="confirm-backdrop" hidden></div>
 <div class="confirm-dialog" id="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message" hidden><h2 id="confirm-title">¿Eliminar evento?</h2><p id="confirm-message"></p><div class="confirm-actions"><button type="button" class="btn btn-ghost" id="confirm-cancel">Cancelar</button><button type="button" class="btn btn-danger" id="confirm-accept">Eliminar</button></div></div>
-<script type="module" src="app.js?v=7"></script>
+<script type="module" src="app.js?v=10"></script>
 </body>
 </html>

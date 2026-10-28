@@ -59,6 +59,10 @@ function renderTopbar(vista) {
 
   if (vista === 'calendar' && state.equipoActivo) {
     const esPersonal = Boolean(state.equipoActivo.esPersonal);
+    const equipos = [...state.equiposDisponibles];
+    if (!esPersonal && !equipos.some((equipo) => equipo.id === state.equipoActivo.id)) {
+      equipos.push(state.equipoActivo);
+    }
     controlesContexto?.append(
       ce('div', { class: 'calendar-context-tabs', role: 'group', 'aria-label': 'Seleccionar calendario' }, [
         ce('button', {
@@ -67,31 +71,60 @@ function renderTopbar(vista) {
           'aria-pressed': String(esPersonal),
           onClick: () => toggleCalendarView('personal'),
         }, 'Mi Calendario'),
-        ce('button', {
-          class: `context-tab${!esPersonal ? ' is-active' : ''}`,
-          type: 'button',
-          'aria-pressed': String(!esPersonal),
-          onClick: () => toggleCalendarView('equipo'),
-        }, 'Equipo'),
+        ce('div', { class: `team-switcher${!esPersonal ? ' is-active' : ''}` }, [
+          ce('button', {
+            class: `context-tab team-switcher-tab${!esPersonal ? ' is-active' : ''}`,
+            type: 'button',
+            'aria-pressed': String(!esPersonal),
+            onClick: () => toggleCalendarView('equipo'),
+          }, [
+            'Equipo',
+            !esPersonal ? ce('span', { class: 'team-active-name' }, state.equipoActivo.nombreEquipo) : null,
+          ]),
+          ce('button', {
+            class: 'team-switcher-toggle',
+            type: 'button',
+            'aria-label': 'Elegir otro equipo',
+            'aria-haspopup': 'menu',
+            'aria-expanded': 'false',
+            onClick: (event) => {
+              event.stopPropagation();
+              const menu = event.currentTarget.parentElement.querySelector('.team-switcher-menu');
+              menu.hidden = !menu.hidden;
+              event.currentTarget.setAttribute('aria-expanded', String(!menu.hidden));
+            },
+          }, '▾'),
+          ce('button', {
+            class: 'team-switcher-settings',
+            type: 'button',
+            'aria-label': 'Gestionar equipos',
+            title: 'Gestionar equipos',
+            onClick: abrirGestionDeEquiposDesdeMenu,
+          }, '⚙'),
+          ce('div', { class: 'team-switcher-menu', role: 'menu', hidden: '' }, [
+            ...(equipos.length
+              ? equipos.map((equipo) => ce('button', {
+                class: 'team-switcher-option',
+                type: 'button',
+                role: 'menuitem',
+                'aria-current': equipo.id === state.equipoActivo.id ? 'true' : null,
+                onClick: async (event) => {
+                  cerrarMenuSelectorEquipo(event.currentTarget.closest('.team-switcher'));
+                  await seleccionarEquipoDesdeHeader(equipo.id);
+                },
+              }, [
+                ce('span', { class: 'team-option-mark', 'aria-hidden': 'true' }, equipo.id === state.equipoActivo.id ? '●' : '○'),
+                ce('span', {}, equipo.nombreEquipo),
+                ])) : [ce('p', { class: 'team-switcher-empty' }, 'Aún no tienes otros equipos.')]),
+            ce('button', {
+              class: 'team-switcher-manage',
+              type: 'button',
+              role: 'menuitem',
+              onClick: abrirGestionDeEquiposDesdeMenu,
+            }, '⚙ Gestionar equipos'),
+          ]),
+        ]),
       ]),
-    );
-    if (!esPersonal) {
-      const selector = ce('select', {
-        class: 'team-context-select',
-        'aria-label': 'Seleccionar equipo',
-        onChange: (event) => seleccionarEquipoDesdeHeader(event.target.value),
-      });
-      for (const equipo of state.equiposDisponibles) {
-        selector.appendChild(ce('option', { value: equipo.id }, equipo.nombreEquipo));
-      }
-      if (!state.equiposDisponibles.some((equipo) => equipo.id === state.equipoActivo.id)) {
-        selector.appendChild(ce('option', { value: state.equipoActivo.id }, state.equipoActivo.nombreEquipo));
-      }
-      selector.value = state.equipoActivo.id;
-      controlesContexto?.appendChild(selector);
-    }
-    contenedor.appendChild(
-      ce('button', { class: 'btn btn-secondary', type: 'button', onClick: abrirColaboradores }, 'Gestión de Equipos'),
     );
   }
 
@@ -105,6 +138,18 @@ function renderTopbar(vista) {
       ce('button', { class: 'btn btn-ghost', type: 'button', onClick: mostrarLogin }, 'Iniciar sesión'),
     );
   }
+}
+
+function cerrarMenuSelectorEquipo(contenedor) {
+  const menu = contenedor?.querySelector('.team-switcher-menu');
+  if (!menu) return;
+  menu.hidden = true;
+  contenedor.querySelector('.team-switcher-toggle')?.setAttribute('aria-expanded', 'false');
+}
+
+function abrirGestionDeEquiposDesdeMenu(event) {
+  cerrarMenuSelectorEquipo(event.currentTarget.closest('.team-switcher'));
+  abrirColaboradores();
 }
 
 async function cargarEquiposContexto() {
@@ -397,7 +442,7 @@ async function refrescarDetalleEquipo() {
   }
 }
 
-async function cargarMes() {
+async function cargarMes(fechaSeleccionada = null) {
   const { año, mes } = state.vista;
   qs('#month-label').textContent = formatearMesAño(año, mes);
   setStatus('calendar-status', { loading: 'Cargando eventos del mes…' });
@@ -418,11 +463,15 @@ async function cargarMes() {
     setStatus('calendar-status', { error: mensajeDeError(error) });
   }
 
-  renderCuadricula();
-
   const hoyIso = fechaHoyIso();
   const [añoHoy, mesHoy] = hoyIso.split('-').map(Number);
-  const diaPorDefecto = añoHoy === año && mesHoy === mes ? hoyIso : `${año}-${String(mes).padStart(2, '0')}-01`;
+  if (añoHoy === año && mesHoy === mes) {
+    qs('#today-event-count').textContent = String(state.eventosDelMes.get(hoyIso) || 0);
+  }
+  renderCuadricula();
+
+  const diaPorDefecto = fechaSeleccionada
+    || (añoHoy === año && mesHoy === mes ? hoyIso : `${año}-${String(mes).padStart(2, '0')}-01`);
   await seleccionarDia(diaPorDefecto);
 }
 
@@ -439,8 +488,8 @@ function renderCuadricula() {
       const cantidadEventos = state.eventosDelMes.get(celda.iso) || 0;
       const clases = ['day-cell'];
       if (!celda.enMes) clases.push('is-outside');
-      if (celda.iso === hoyIso) clases.push('is-today');
-      if (celda.iso === state.diaSeleccionado) clases.push('is-selected');
+      if (celda.iso === hoyIso) clases.push('is-today', 'is-current-day');
+      if (celda.iso === state.diaSeleccionado) clases.push('is-selected', 'is-selected-day');
 
       const hijos = [ce('span', { class: 'day-number' }, String(celda.dia))];
       if (cantidadEventos > 0) {
@@ -470,7 +519,7 @@ async function manejarClicDia(celda) {
     const [añoCelda, mesCelda] = celda.iso.split('-').map(Number);
     state.vista = { año: añoCelda, mes: mesCelda };
     state.diaSeleccionado = celda.iso;
-    await cargarMes();
+    await cargarMes(celda.iso);
     return;
   }
   await seleccionarDia(celda.iso);
@@ -480,8 +529,10 @@ async function seleccionarDia(iso) {
   state.diaSeleccionado = iso;
   renderCuadricula();
 
-  qs('#day-panel-title').textContent = formatearFechaLarga(iso);
+  qs('#day-panel-title').textContent = formatearFechaLarga(iso).toLocaleUpperCase('es');
   qs('#open-new-event-day').hidden = false;
+  qs('#event-search').value = '';
+  qs('#event-search-empty').hidden = true;
   setStatus('day-panel-status', { loading: 'Cargando eventos…' });
   qs('#day-events-list').innerHTML = '';
 
@@ -528,6 +579,21 @@ function renderEventosDelDia(eventos, fechaIso) {
     ]);
     lista.appendChild(fila);
   }
+
+  filtrarEventos();
+}
+
+function filtrarEventos() {
+  const consulta = (qs('#event-search')?.value || '').trim().toLocaleLowerCase();
+  const filas = [...document.querySelectorAll('#day-events-list .event-row')];
+  let visibles = 0;
+  for (const fila of filas) {
+    const coincide = !consulta || fila.textContent.toLocaleLowerCase().includes(consulta);
+    fila.hidden = !coincide;
+    if (coincide) visibles += 1;
+  }
+  const aviso = qs('#event-search-empty');
+  if (aviso) aviso.hidden = !consulta || visibles > 0;
 }
 
 async function manejarEliminarEvento(evento, fechaIso) {
@@ -1193,6 +1259,19 @@ function inicializar() {
   }
   if (qs('#prev-month')) qs('#prev-month').addEventListener('click', manejarMesAnterior);
   if (qs('#next-month')) qs('#next-month').addEventListener('click', manejarMesSiguiente);
+  if (qs('#event-search')) qs('#event-search').addEventListener('input', filtrarEventos);
+  document.addEventListener('click', (event) => {
+    if (event.target instanceof Element && event.target.closest('.team-switcher')) return;
+    document.querySelectorAll('.team-switcher-menu:not([hidden])').forEach((menu) => {
+      cerrarMenuSelectorEquipo(menu.parentElement);
+    });
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    document.querySelectorAll('.team-switcher-menu:not([hidden])').forEach((menu) => {
+      cerrarMenuSelectorEquipo(menu.parentElement);
+    });
+  });
   if (qs('#open-new-event')) qs('#open-new-event').addEventListener('click', abrirDrawerEvento);
   if (qs('#open-new-event-day')) qs('#open-new-event-day').addEventListener('click', abrirDrawerEvento);
   if (qs('#close-event-drawer')) qs('#close-event-drawer').addEventListener('click', cerrarDrawerEvento);
