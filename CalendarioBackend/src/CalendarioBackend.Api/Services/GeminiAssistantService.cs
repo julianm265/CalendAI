@@ -51,8 +51,9 @@ public sealed class GeminiAssistantService
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("La integración con Gemini no está configurada.");
 
-        var candidatos = ConstruirCandidatos(equipo, hoy);
-        var prompt = CrearPrompt(equipo, usuario, miembro.Id, mensajes, hoy, candidatos);
+        var modoAnalisis = equipo.EsPersonal ? "personal" : "equipo";
+        var candidatos = ConstruirCandidatos(equipo, hoy, modoAnalisis);
+        var prompt = CrearPrompt(equipo, usuario, miembro.Id, mensajes, hoy, candidatos, modoAnalisis);
         var modelo = _configuration["GEMINI_MODEL"] ?? "gemini-3.5-flash-lite";
         var cliente = _httpClientFactory.CreateClient("Gemini");
         var url = $"v1beta/models/{Uri.EscapeDataString(modelo)}:generateContent?key={Uri.EscapeDataString(apiKey)}";
@@ -91,7 +92,7 @@ public sealed class GeminiAssistantService
             candidatos.Select(c => c.Lugar).Distinct(StringComparer.OrdinalIgnoreCase).ToList());
     }
 
-    private IReadOnlyList<Candidato> ConstruirCandidatos(Equipo equipo, DateOnly hoy)
+    private IReadOnlyList<Candidato> ConstruirCandidatos(Equipo equipo, DateOnly hoy, string modo)
     {
         var lugares = _calendarioService.ObtenerEventosDelMes(equipo.Id, hoy.Year, (byte)hoy.Month)
             .Concat(_calendarioService.ObtenerEventosDelMes(equipo.Id, hoy.AddDays(31).Year, (byte)hoy.AddDays(31).Month))
@@ -106,8 +107,24 @@ public sealed class GeminiAssistantService
             .SelectMany(offset =>
             {
                 var fecha = hoy.AddDays(offset);
-                return _calendarioService.ObtenerEventosDelDia(equipo.Id, fecha)
-                    .Select(e => (fecha, e));
+                if (modo == "personal")
+                {
+                    return _calendarioService.ObtenerEventosDelDia(equipo.Id, fecha)
+                        .Select(e => (fecha, evento: e, usuario: usuarioDeEvento(e, equipo, "personal")));
+                }
+
+                var eventosDelEquipo = _calendarioService.ObtenerEventosDelDia(equipo.Id, fecha)
+                    .Select(e => (fecha, evento: e, usuario: equipo.BuscarColaborador(e.ColaboradorOrganizadorId ?? Guid.Empty)?.Usuario ?? "equipo"));
+                var eventosPersonales = equipo.LColaboradores
+                    .SelectMany(colaborador =>
+                    {
+                        var calendario = _equipoService.ObtenerCalendarioPersonal(colaborador.Usuario);
+                        return calendario is null
+                            ? Enumerable.Empty<(DateOnly fecha, Evento evento, string usuario)>()
+                            : _calendarioService.ObtenerEventosDelDia(calendario.Id, fecha)
+                                .Select(e => (fecha, evento: e, usuario: colaborador.Usuario));
+                    });
+                return eventosDelEquipo.Concat(eventosPersonales);
             })
             .ToList();
         var integrantes = Math.Max(1, equipo.LColaboradores.Count);
@@ -117,8 +134,8 @@ public sealed class GeminiAssistantService
                 {
                     var fecha = hoy.AddDays(offset);
                     var hora = new TimeOnly(hour, minute).ToString("HH:mm", CultureInfo.InvariantCulture);
-                    var ocupados = eventos.Where(x => x.fecha == fecha && x.e.HoraEvento.ToString("HH:mm") == hora)
-                        .Select(x => equipo.BuscarColaborador(x.e.ColaboradorOrganizadorId ?? Guid.Empty)?.Usuario ?? "usuario")
+                    var ocupados = eventos.Where(x => x.fecha == fecha && x.evento.HoraEvento.ToString("HH:mm") == hora)
+                        .Select(x => x.usuario)
                         .Distinct().ToList();
                     return lugares.Select(lugar => new Candidato(fecha.ToString("yyyy-MM-dd"), hora, lugar, integrantes - Math.Min(integrantes, ocupados.Count), integrantes, ocupados));
                 }))).SelectMany(x => x).Where(x => x.Libres > 0).ToList();
@@ -132,14 +149,14 @@ public sealed class GeminiAssistantService
     }
 
     private static string CrearPrompt(Equipo equipo, string usuario, Guid miembroId, IReadOnlyList<AsistenteMensaje> mensajes,
-        DateOnly hoy, IReadOnlyList<Candidato> candidatos) =>
+        DateOnly hoy, IReadOnlyList<Candidato> candidatos, string modo) =>
         $"""
         Eres el asistente de CalendAI. Responde en español y devuelve SOLO JSON válido.
         No inventes fechas, horas ni lugares. Selecciona propuestas únicamente de CANDIDATOS.
         Devuelve un objeto JSON con las propiedades respuesta y propuestas. Cada propuesta tiene fecha,
         hora, lugar (string o null) y motivo.
         Devuelve como máximo tres propuestas. No crees eventos.
-        EQUIPO: {equipo.NombreEquipo}; USUARIO: {usuario}; HOY: {hoy:yyyy-MM-dd}
+        EQUIPO: {equipo.NombreEquipo}; USUARIO: {usuario}; MODO: {modo}; HOY: {hoy:yyyy-MM-dd}
         CANDIDATOS: {JsonSerializer.Serialize(candidatos)}
         HISTORIAL: {JsonSerializer.Serialize(mensajes.TakeLast(20))}
         """;
@@ -160,11 +177,15 @@ public sealed class GeminiAssistantService
             return JsonSerializer.Deserialize<ModeloRespuesta>(texto, JsonOptions)
                 ?? throw new InvalidOperationException("Gemini devolvió un formato incompleto.");
         }
+
         catch (JsonException exception)
         {
             throw new InvalidOperationException("Gemini devolvió una respuesta no válida.", exception);
         }
     }
+
+    private static string usuarioDeEvento(Evento evento, Equipo equipo, string valorPredeterminado) =>
+        equipo.BuscarColaborador(evento.ColaboradorOrganizadorId ?? Guid.Empty)?.Usuario ?? valorPredeterminado;
 
     private sealed record Candidato(string Fecha, string Hora, string Lugar, int Libres, int Total, IReadOnlyList<string> Ocupados);
     private sealed record ModeloRespuesta(string? Respuesta, IReadOnlyList<ModelPropuesta> Propuestas);

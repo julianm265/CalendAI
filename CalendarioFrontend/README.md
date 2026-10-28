@@ -164,9 +164,12 @@ mostrar datos simulados.
    no se detectan automáticamente.
 6. **Chat IA**: el botón flotante **Chat IA** consulta
    `GET /api/equipos/{id}/asistente/estado` y conversa mediante
-   `POST /api/equipos/{id}/asistente/chat`. Puede proponer hasta tres horarios
-   válidos. Cada propuesta solo rellena el formulario normal; el usuario debe
-   confirmar y guardar el evento. La clave de Gemini permanece en el backend.
+   `POST /api/equipos/{id}/asistente/chat`. El asistente usa el calendario que está
+   seleccionado en la pantalla: en el calendario personal analiza solo los eventos
+   personales; en un equipo analiza los eventos del equipo y los calendarios personales
+   de todos sus integrantes. Puede proponer hasta tres horarios válidos. Cada propuesta
+   solo rellena el formulario normal; el usuario debe confirmar y guardar el evento.
+   La clave de Gemini permanece en el backend.
 
 La sesión (`colaborador`) y el equipo activo se guardan en
 `sessionStorage` para sobrevivir recargas de la página, **pero no son un

@@ -48,8 +48,9 @@ public class EquipoService
                 throw new UnauthorizedAccessException("Solo el líder del equipo puede invitar usuarios.");
         }
 
-        var colaborador = _colaboradorRepository?.ObtenerPorUsuario(usuario)
-            ?? throw new KeyNotFoundException($"No se encontró un usuario registrado con el nombre '{usuario}'.");
+        var usuarioNormalizado = usuario?.Trim();
+        var colaborador = _colaboradorRepository?.ObtenerPorUsuario(usuarioNormalizado ?? "")
+            ?? throw new KeyNotFoundException($"No se encontró un usuario registrado con el nombre '{usuarioNormalizado}'.");
 
         equipo.AgregarColaborador(colaborador, "Miembro");
         _equipoRepository.AgregarColaborador(equipo.Id, colaborador, "Miembro");
