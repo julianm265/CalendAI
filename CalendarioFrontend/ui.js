@@ -172,6 +172,7 @@ export function renderTeamMembers(list, members, {
 /* ---------------------------------- Drawers -------------------------------- */
 
 let ultimoElementoConFoco = null;
+const cierresDrawerPendientes = new Map();
 
 function manejarTeclaDrawer(event) {
   if (event.key !== 'Escape') return;
@@ -183,6 +184,12 @@ export function openDrawer(drawerId, backdropId) {
   const drawer = qs(`#${drawerId}`);
   const backdrop = qs(`#${backdropId}`);
   if (!drawer || !backdrop) return;
+
+  const cierrePendiente = cierresDrawerPendientes.get(drawer);
+  if (cierrePendiente) {
+    clearTimeout(cierrePendiente);
+    cierresDrawerPendientes.delete(drawer);
+  }
 
   ultimoElementoConFoco = document.activeElement;
   drawer.dataset.backdropId = backdropId;
@@ -209,10 +216,14 @@ export function closeDrawer(drawerId, backdropId) {
   backdrop.classList.remove('is-visible');
   document.removeEventListener('keydown', manejarTeclaDrawer);
 
-  setTimeout(() => {
+  const cierrePendiente = cierresDrawerPendientes.get(drawer);
+  if (cierrePendiente) clearTimeout(cierrePendiente);
+  const temporizadorCierre = setTimeout(() => {
     drawer.hidden = true;
     backdrop.hidden = true;
+    cierresDrawerPendientes.delete(drawer);
   }, 200);
+  cierresDrawerPendientes.set(drawer, temporizadorCierre);
 
   if (ultimoElementoConFoco instanceof HTMLElement) ultimoElementoConFoco.focus();
 }
