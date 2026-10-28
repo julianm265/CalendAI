@@ -51,9 +51,9 @@ public class EquiposController : ControllerBase
                 equipo.EsPersonal,
                 RolUsuario(equipo, usuario)));
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException exception)
         {
-            return NotFound();
+            return NotFound(new { error = exception.Message });
         }
     }
 

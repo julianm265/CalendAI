@@ -84,10 +84,21 @@ horarios y lugares válidos, envía únicamente esos candidatos a Gemini y valid
 de responder; la clave nunca se entrega al navegador. Configura `GEMINI_API_KEY` y
 `GEMINI_MODEL=gemini-3.5-flash-lite` en el entorno del backend.
 
-El cuerpo acepta `equipoId`, `mensaje` e `historial`. El usuario se identifica mediante el encabezado
-`X-Usuario`, igual que el resto de la sesión actual. El asistente puede responder consultas sobre
-la agenda, proponer horarios libres y devolver una acción `create_event`; esa acción solo se ejecuta
-en el backend después de validar pertenencia al equipo, fecha, hora, organizador y ubicación opcional.
+El cuerpo del chat acepta `mensajes` y `hoy`. El modo se determina automáticamente a partir del
+calendario indicado en la ruta:
+
+```json
+{
+  "mensajes": [{ "rol": "usuario", "texto": "Busca un horario" }],
+  "hoy": "2026-09-03"
+}
+```
+
+Si el calendario indicado es personal, solo se consideran sus eventos. Si es un equipo, los
+candidatos cruzan los eventos del equipo con los calendarios personales persistidos de todos sus
+integrantes. Gemini recibe únicamente esos candidatos y sus propuestas se validan antes de
+responder. El botón **Crear evento** solo carga la propuesta en el formulario normal: el usuario
+debe revisarla y guardarla.
 
 Los usuarios que solo existían en la implementación anterior en memoria no pueden recuperarse
 después de haber detenido el contenedor, porque no había un origen persistente que migrar. A

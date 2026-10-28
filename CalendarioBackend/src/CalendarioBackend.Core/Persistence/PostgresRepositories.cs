@@ -10,12 +10,19 @@ public sealed class PostgresColaboradorRepository(CalendarioDbContext db) : ICol
 {
     public Colaborador? ObtenerPorUsuario(string usuario)
     {
+        var usuarioNormalizado = usuario?.Trim();
+        if (string.IsNullOrWhiteSpace(usuarioNormalizado)) return null;
         var row = db.Colaboradores.AsNoTracking()
-            .FirstOrDefault(row => row.Usuario.ToLower() == usuario.ToLower());
+            .FirstOrDefault(row => row.Usuario.Trim().ToLower() == usuarioNormalizado.ToLower());
         return row is null ? null : new Colaborador(row.Id, row.Usuario, row.ContraseñaHash);
     }
 
-    public bool ExistePorUsuario(string usuario) => db.Colaboradores.Any(row => row.Usuario.ToLower() == usuario.ToLower());
+    public bool ExistePorUsuario(string usuario)
+    {
+        var usuarioNormalizado = usuario?.Trim();
+        return !string.IsNullOrWhiteSpace(usuarioNormalizado)
+            && db.Colaboradores.Any(row => row.Usuario.Trim().ToLower() == usuarioNormalizado.ToLower());
+    }
 
     public void Agregar(Colaborador colaborador, Guid? equipoId)
     {
