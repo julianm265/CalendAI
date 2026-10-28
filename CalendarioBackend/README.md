@@ -31,7 +31,8 @@ La API expone, entre otras, estas rutas:
 - `DELETE /api/equipos/{id}/eventos/{eventoId}?fecha=2026-09-03`
 - `GET /api/lugares/buscar?query=Auditorio%20Central`
 - `GET /api/equipos/{id}/lugares/preferidos?limite=8`
-- `POST /api/ia/chat`
+- `GET /api/equipos/{id}/asistente/estado`
+- `POST /api/equipos/{id}/asistente/chat`
 
 ## Ejecutar todo con Docker Compose
 
@@ -78,10 +79,10 @@ agrupando diferencias de mayúsculas, espacios y acentos.
 
 ### Asistente conversacional de CalendAI
 
-El botón **Chat IA** del frontend usa `POST /api/ia/chat`. El backend envía a Gemini solo un
-resumen del equipo autorizado (eventos de los próximos tres meses, lugares frecuentes y tendencia
-mensual); la clave nunca se entrega al navegador. Configura `GEMINI_API_KEY` (o el alias heredado
-`GEMINI_KEY`) y opcionalmente `GEMINI_MODEL` en `.env`.
+El botón **Chat IA** del frontend usa el estado y chat del equipo. El backend calcula previamente
+horarios y lugares válidos, envía únicamente esos candidatos a Gemini y valida sus propuestas antes
+de responder; la clave nunca se entrega al navegador. Configura `GEMINI_API_KEY` y
+`GEMINI_MODEL=gemini-3.5-flash-lite` en el entorno del backend.
 
 El cuerpo acepta `equipoId`, `mensaje` e `historial`. El usuario se identifica mediante el encabezado
 `X-Usuario`, igual que el resto de la sesión actual. El asistente puede responder consultas sobre

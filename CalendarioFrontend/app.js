@@ -220,6 +220,7 @@ async function manejarSubmitLogin(event) {
     // 2. Ejecutar login normal
     const respuesta = await api.iniciarSesion(usuario, contraseña);
     const colaborador = normalizarColaborador(respuesta?.colaborador ?? respuesta);
+    if (colaborador && respuesta?.token) colaborador.token = respuesta.token;
 
     if (!colaborador || !colaborador.usuario) {
       setFormError('login-form-error', 'Usuario o contraseña incorrectos.');
@@ -814,6 +815,11 @@ function abrirChatIA() {
   qs('#ai-chat-backdrop').hidden = false;
   qs('#open-ai-chat').setAttribute('aria-expanded', 'true');
   qs('#ai-chat-input')?.focus();
+  if (state.equipoActivo?.id) {
+    api.obtenerEstadoAsistente(state.equipoActivo.id).catch(() => {
+      agregarMensajeChatIA('El asistente no está disponible en este momento.', 'assistant');
+    });
+  }
   document.addEventListener('keydown', manejarTeclaChatIA);
 }
 
@@ -839,6 +845,35 @@ function agregarMensajeChatIA(texto, tipo) {
   mensajes.scrollTop = mensajes.scrollHeight;
 }
 
+function cargarPropuestaEnFormulario(propuesta) {
+  abrirDrawerEvento();
+  qs('#evento-fecha').value = propuesta.fecha || fechaHoyIso();
+  qs('#evento-hora').value = propuesta.hora || '';
+  qs('#evento-lugar').value = propuesta.lugar || '';
+  qs('#evento-nombre').value = 'Evento del equipo';
+  qs('#evento-descripcion').value = propuesta.motivo || '';
+  toast('Propuesta cargada en el formulario. Revísala y guárdala para crear el evento.');
+}
+
+function renderizarPropuestasChatIA(propuestas) {
+  const mensajes = qs('.ai-chat-messages');
+  if (!mensajes || !Array.isArray(propuestas) || propuestas.length === 0) return;
+  const lista = ce('div', { class: 'ai-chat-proposals' });
+  for (const propuesta of propuestas.slice(0, 3)) {
+    lista.appendChild(ce('article', { class: 'ai-chat-proposal' }, [
+      ce('p', {}, `${propuesta.fecha} · ${propuesta.hora} · ${propuesta.lugar || 'Sin lugar'}`),
+      ce('p', {}, propuesta.motivo || 'Horario disponible para el equipo.'),
+      ce('button', {
+        type: 'button',
+        class: 'btn btn-secondary',
+        onClick: () => cargarPropuestaEnFormulario(propuesta),
+      }, 'Crear evento'),
+    ]));
+  }
+  mensajes.appendChild(lista);
+  mensajes.scrollTop = mensajes.scrollHeight;
+}
+
 async function manejarSubmitChatIA(event) {
   event.preventDefault();
   const input = qs('#ai-chat-input');
@@ -850,25 +885,16 @@ async function manejarSubmitChatIA(event) {
   const boton = qs('#ai-chat-form button[type="submit"]');
   setButtonLoading(boton, true, '…');
   try {
-    const respuesta = await api.conversarConIA(
+    historialChatIA.push({ rol: 'usuario', texto: mensaje });
+    const respuesta = await api.conversarConAsistente(
       state.equipoActivo.id,
-      mensaje,
       historialChatIA,
+      fechaHoyIso(),
     );
-    historialChatIA.push({ role: 'user', content: mensaje });
-    historialChatIA.push({ role: 'model', content: respuesta.reply });
-    agregarMensajeChatIA(respuesta.reply, 'assistant');
-    if (respuesta.action?.type === 'event_created') {
-      toast('Evento agendado por el asistente.', 'success');
-      if (respuesta.action.fecha) {
-        const [año, mes] = respuesta.action.fecha.split('-').map(Number);
-        if (año && mes) {
-          state.vista = { año, mes };
-          state.diaSeleccionado = respuesta.action.fecha;
-        }
-      }
-      await cargarMes();
-    }
+    const textoRespuesta = respuesta?.respuesta || 'No pude obtener una respuesta.';
+    historialChatIA.push({ rol: 'asistente', texto: textoRespuesta });
+    agregarMensajeChatIA(textoRespuesta, 'assistant');
+    renderizarPropuestasChatIA(respuesta?.propuestas);
   } catch (error) {
     agregarMensajeChatIA(error instanceof ApiError ? error.message : 'No pude procesar tu solicitud.', 'assistant');
   } finally {
@@ -1209,6 +1235,13 @@ function inicializar() {
   if (qs('#close-ai-chat')) qs('#close-ai-chat').addEventListener('click', cerrarChatIA);
   if (qs('#ai-chat-backdrop')) qs('#ai-chat-backdrop').addEventListener('click', cerrarChatIA);
   if (qs('#ai-chat-form')) qs('#ai-chat-form').addEventListener('submit', manejarSubmitChatIA);
+  document.querySelectorAll('.ai-chat-suggestion').forEach((boton) => {
+    boton.addEventListener('click', () => {
+      const input = qs('#ai-chat-input');
+      input.value = boton.textContent;
+      input.focus();
+    });
+  });
   if (qs('#close-collab-drawer')) qs('#close-collab-drawer').addEventListener('click', cerrarColaboradores);
   if (qs('#collab-drawer-backdrop')) qs('#collab-drawer-backdrop').addEventListener('click', cerrarColaboradores);
   if (qs('#form-colaborador')) qs('#form-colaborador').addEventListener('submit', manejarSubmitColaborador);

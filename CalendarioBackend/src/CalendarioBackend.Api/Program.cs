@@ -42,6 +42,7 @@ builder.Services.AddHttpClient("Gemini", client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 builder.Services.AddScoped<GeminiAssistantService>();
+builder.Services.AddSingleton<JwtTokenService>();
 
 var app = builder.Build();
 
@@ -124,7 +125,7 @@ app.Use(async (context, next) =>
     if (context.Request.Headers.TryGetValue("Origin", out var origin))
     {
         context.Response.Headers["Access-Control-Allow-Origin"] = origin.ToString();
-        context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, X-Usuario";
+        context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Usuario";
         context.Response.Headers["Access-Control-Allow-Methods"] = "GET,POST,DELETE,OPTIONS";
         context.Response.Headers["Vary"] = "Origin";
     }

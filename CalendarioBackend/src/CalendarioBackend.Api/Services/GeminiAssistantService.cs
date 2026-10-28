@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using CalendarioBackend.Core.Models;
 using CalendarioBackend.Core.Services;
 
@@ -9,191 +8,157 @@ namespace CalendarioBackend.Api.Services;
 
 public sealed class GeminiAssistantService
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
     private readonly EquipoService _equipoService;
     private readonly CalendarioService _calendarioService;
+    private readonly ILogger<GeminiAssistantService> _logger;
 
     public GeminiAssistantService(
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
         EquipoService equipoService,
-        CalendarioService calendarioService)
+        CalendarioService calendarioService,
+        ILogger<GeminiAssistantService> logger)
     {
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _equipoService = equipoService;
         _calendarioService = calendarioService;
+        _logger = logger;
     }
 
-    public async Task<AiChatResponse> ConversarAsync(
+    public AsistenteEstado ObtenerEstado() =>
+        new(true, _configuration["GEMINI_MODEL"] ?? "gemini-3.5-flash-lite");
+
+    public async Task<AsistenteChatResponse> ConversarAsync(
         Guid equipoId,
         string usuario,
-        string mensaje,
-        IReadOnlyList<AiChatMessage>? historial,
+        IReadOnlyList<AsistenteMensaje> mensajes,
+        DateOnly hoy,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(usuario))
             throw new UnauthorizedAccessException("La sesión de usuario es obligatoria.");
-        if (string.IsNullOrWhiteSpace(mensaje))
-            throw new ArgumentException("El mensaje no puede estar vacío.", nameof(mensaje));
+        if (mensajes is null || mensajes.Count == 0)
+            throw new ArgumentException("Debes enviar al menos un mensaje.", nameof(mensajes));
 
         var equipo = _equipoService.ObtenerEquipo(equipoId);
         var miembro = equipo.BuscarColaborador(usuario.Trim())
             ?? throw new UnauthorizedAccessException("No perteneces al equipo seleccionado.");
-
-        var apiKey = _configuration["GEMINI_API_KEY"] ?? _configuration["GEMINI_KEY"];
+        var apiKey = _configuration["GEMINI_API_KEY"];
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("La integración con Gemini no está configurada.");
 
-        var modelo = _configuration["GEMINI_MODEL"] ?? "gemini-2.0-flash";
-        var contexto = CrearContexto(equipo, usuario, miembro.Id);
-        var contenido = CrearPrompt(mensaje, historial, contexto);
+        var candidatos = ConstruirCandidatos(equipo, hoy);
+        var prompt = CrearPrompt(equipo, usuario, miembro.Id, mensajes, hoy, candidatos);
+        var modelo = _configuration["GEMINI_MODEL"] ?? "gemini-3.5-flash-lite";
         var cliente = _httpClientFactory.CreateClient("Gemini");
         var url = $"v1beta/models/{Uri.EscapeDataString(modelo)}:generateContent?key={Uri.EscapeDataString(apiKey)}";
 
         using var respuesta = await cliente.PostAsJsonAsync(url, new
         {
-            contents = new[] { new { parts = new[] { new { text = contenido } } } },
-            generationConfig = new
-            {
-                temperature = 0.2,
-                responseMimeType = "application/json"
-            }
+            contents = new[] { new { parts = new[] { new { text = prompt } } } },
+            generationConfig = new { temperature = 0.1, responseMimeType = "application/json" }
         }, cancellationToken);
-
         var cuerpo = await respuesta.Content.ReadAsStringAsync(cancellationToken);
         if (!respuesta.IsSuccessStatusCode)
-            throw new InvalidOperationException(
-                $"Gemini no pudo procesar la solicitud ({(int)respuesta.StatusCode}).");
-
-        var salida = ExtraerTextoGemini(cuerpo);
-        var resultado = ParsearSalida(salida);
-        var debeAgendar = EsSolicitudDeAgendamiento(mensaje);
-        var accionSolicitada = debeAgendar &&
-            (resultado.Action is null ||
-             !string.Equals(resultado.Action.Type, "create_event", StringComparison.OrdinalIgnoreCase))
-            ? IntentarExtraerAgendamiento(mensaje)
-            : resultado.Action;
-        var accion = EjecutarAccion(accionSolicitada, equipo, miembro.Id);
-        if (debeAgendar && accion is null)
         {
-            return new AiChatResponse(
-                "Puedo agendarlo, pero necesito el nombre, la fecha en formato AAAA-MM-DD y la hora en formato HH:mm.",
-                null);
+            _logger.LogError("Gemini devolvió HTTP {StatusCode} usando el modelo {Modelo}.", (int)respuesta.StatusCode, modelo);
+            throw new InvalidOperationException($"Gemini no pudo procesar la solicitud ({(int)respuesta.StatusCode}).");
         }
 
-        return new AiChatResponse(resultado.Reply, accion);
-    }
-
-    private string CrearContexto(Equipo equipo, string usuario, Guid miembroId)
-    {
-        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
-        var eventos = Enumerable.Range(0, 3)
-            .SelectMany(offset =>
-            {
-                var fecha = hoy.AddMonths(offset);
-                return _calendarioService.ObtenerEventosDelMes(equipo.Id, fecha.Year, (byte)fecha.Month)
-                    .Select(item => new ContextoEvento(item.Fecha, item.Evento));
-            })
-            .GroupBy(item => item.Evento.Id)
-            .Select(grupo => grupo.First())
-            .OrderBy(item => item.Fecha)
-            .ThenBy(item => item.Evento.HoraEvento)
+        var modeloRespuesta = ParsearSalida(ExtraerTextoGemini(cuerpo));
+        var propuestas = (modeloRespuesta.Propuestas ?? Array.Empty<ModelPropuesta>())
+            .Take(3)
+            .Select(item => (item, candidato: EncontrarCandidato(item, candidatos)))
+            .Where(item => item.candidato is not null)
+            .Select(item => new AsistentePropuesta(
+                item.item.Fecha,
+                item.item.Hora,
+                string.IsNullOrWhiteSpace(item.item.Lugar) ? null : item.item.Lugar,
+                item.item.Motivo,
+                item.candidato!.Libres,
+                item.candidato.Total,
+                item.candidato.Ocupados))
             .ToList();
 
-        var lugares = eventos
-            .Select(item => item.Evento.LugarEvento?.Trim())
-            .Where(lugar => !string.IsNullOrWhiteSpace(lugar))
-            .GroupBy(lugar => lugar!, StringComparer.OrdinalIgnoreCase)
-            .OrderByDescending(grupo => grupo.Count())
-            .ThenBy(grupo => grupo.Key, StringComparer.OrdinalIgnoreCase)
-            .Take(8)
-            .Select(grupo => new { lugar = grupo.First(), usos = grupo.Count() });
-
-        var tendencia = eventos
-            .GroupBy(item => item.Fecha.ToString("yyyy-MM", CultureInfo.InvariantCulture))
-            .OrderBy(grupo => grupo.Key)
-            .Select(grupo => new { mes = grupo.Key, eventos = grupo.Count() });
-
-        return JsonSerializer.Serialize(new
-        {
-            equipo = equipo.NombreEquipo,
-            usuario,
-            rol = equipo.ObtenerRolColaborador(miembroId),
-            rango = new { desde = hoy, hasta = hoy.AddMonths(3).AddDays(-1) },
-            eventos = eventos.Select(item => new
-            {
-                fecha = item.Fecha,
-                hora = item.Evento.HoraEvento.ToString("HH:mm", CultureInfo.InvariantCulture),
-                nombre = item.Evento.NombreEvento,
-                lugar = item.Evento.LugarEvento,
-                descripcion = item.Evento.Descripcion
-            }),
-            lugaresFrecuentes = lugares,
-            tendenciaMensual = tendencia
-        });
+        return new AsistenteChatResponse(
+            modeloRespuesta.Respuesta?.Trim() ?? "No encontré una respuesta para esa solicitud.",
+            propuestas,
+            equipo.LColaboradores.Select(c => c.Usuario).OrderBy(x => x).ToList(),
+            candidatos.Select(c => c.Lugar).Distinct(StringComparer.OrdinalIgnoreCase).ToList());
     }
 
-    private static string CrearPrompt(
-        string mensaje,
-        IReadOnlyList<AiChatMessage>? historial,
-        string contexto)
+    private IReadOnlyList<Candidato> ConstruirCandidatos(Equipo equipo, DateOnly hoy)
     {
-        var conversaciones = historial is null
-            ? ""
-            : string.Join('\n', historial.TakeLast(12).Select(item => $"{item.Role}: {item.Content}"));
-
-        return $"""
-            Eres el asistente conversacional de CalendAI. Responde en español, de forma clara y breve.
-            Trabajas únicamente con el equipo y los eventos incluidos en CONTEXTO. No inventes disponibilidad,
-            eventos, usuarios ni lugares. Puedes explicar lugares frecuentes, tendencias y proponer horarios
-            libres. Para agendar un evento necesitas fecha ISO (YYYY-MM-DD), hora de 24 horas y nombre.
-            Si falta alguno, pregunta antes de crear. Nunca crees eventos solo por una sugerencia: crea solo
-            cuando el usuario lo pida expresamente. Verifica mentalmente los conflictos del CONTEXTO.
-
-            Devuelve SOLO JSON válido con las propiedades reply y action.
-            action debe ser null o un objeto create_event con fecha, hora, nombre,
-            lugar y descripcion.
-            No uses Markdown dentro del JSON.
-
-            CONTEXTO:
-            {contexto}
-
-            HISTORIAL:
-            {conversaciones}
-
-            MENSAJE ACTUAL:
-            {mensaje}
-            """;
+        var lugares = _calendarioService.ObtenerEventosDelMes(equipo.Id, hoy.Year, (byte)hoy.Month)
+            .Concat(_calendarioService.ObtenerEventosDelMes(equipo.Id, hoy.AddDays(31).Year, (byte)hoy.AddDays(31).Month))
+            .Select(x => x.Evento.LugarEvento?.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Cast<string>()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(20)
+            .Append("")
+            .ToList();
+        var eventos = Enumerable.Range(0, 15)
+            .SelectMany(offset =>
+            {
+                var fecha = hoy.AddDays(offset);
+                return _calendarioService.ObtenerEventosDelDia(equipo.Id, fecha)
+                    .Select(e => (fecha, e));
+            })
+            .ToList();
+        var integrantes = Math.Max(1, equipo.LColaboradores.Count);
+        return Enumerable.Range(0, 15).SelectMany(offset =>
+            Enumerable.Range(9, 15).SelectMany(hour =>
+                new[] { 0, 30 }.Select(minute =>
+                {
+                    var fecha = hoy.AddDays(offset);
+                    var hora = new TimeOnly(hour, minute).ToString("HH:mm", CultureInfo.InvariantCulture);
+                    var ocupados = eventos.Where(x => x.fecha == fecha && x.e.HoraEvento.ToString("HH:mm") == hora)
+                        .Select(x => equipo.BuscarColaborador(x.e.ColaboradorOrganizadorId ?? Guid.Empty)?.Usuario ?? "usuario")
+                        .Distinct().ToList();
+                    return lugares.Select(lugar => new Candidato(fecha.ToString("yyyy-MM-dd"), hora, lugar, integrantes - Math.Min(integrantes, ocupados.Count), integrantes, ocupados));
+                }))).SelectMany(x => x).Where(x => x.Libres > 0).ToList();
     }
+
+    private static Candidato? EncontrarCandidato(ModelPropuesta propuesta, IReadOnlyList<Candidato> candidatos)
+    {
+        var lugar = propuesta.Lugar?.Trim() ?? "";
+        return candidatos.FirstOrDefault(c => c.Fecha == propuesta.Fecha && c.Hora == propuesta.Hora &&
+            string.Equals(c.Lugar, lugar, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string CrearPrompt(Equipo equipo, string usuario, Guid miembroId, IReadOnlyList<AsistenteMensaje> mensajes,
+        DateOnly hoy, IReadOnlyList<Candidato> candidatos) =>
+        $"""
+        Eres el asistente de CalendAI. Responde en español y devuelve SOLO JSON válido.
+        No inventes fechas, horas ni lugares. Selecciona propuestas únicamente de CANDIDATOS.
+        Devuelve un objeto JSON con las propiedades respuesta y propuestas. Cada propuesta tiene fecha,
+        hora, lugar (string o null) y motivo.
+        Devuelve como máximo tres propuestas. No crees eventos.
+        EQUIPO: {equipo.NombreEquipo}; USUARIO: {usuario}; HOY: {hoy:yyyy-MM-dd}
+        CANDIDATOS: {JsonSerializer.Serialize(candidatos)}
+        HISTORIAL: {JsonSerializer.Serialize(mensajes.TakeLast(20))}
+        """;
 
     private static string ExtraerTextoGemini(string cuerpo)
     {
         using var documento = JsonDocument.Parse(cuerpo);
-        return documento.RootElement
-            .GetProperty("candidates")[0]
-            .GetProperty("content")
-            .GetProperty("parts")[0]
-            .GetProperty("text")
-            .GetString() ?? throw new InvalidOperationException("Gemini devolvió una respuesta vacía.");
+        return documento.RootElement.GetProperty("candidates")[0].GetProperty("content")
+            .GetProperty("parts")[0].GetProperty("text").GetString()
+            ?? throw new InvalidOperationException("Gemini devolvió una respuesta vacía.");
     }
 
-    private static AiModelResult ParsearSalida(string salida)
+    private static ModeloRespuesta ParsearSalida(string salida)
     {
-        var texto = salida.Trim();
-        if (texto.StartsWith("```", StringComparison.Ordinal))
-        {
-            texto = texto.Replace("```json", "", StringComparison.OrdinalIgnoreCase)
-                .Replace("```", "", StringComparison.Ordinal).Trim();
-        }
-
+        var texto = salida.Trim().Replace("```json", "", StringComparison.OrdinalIgnoreCase).Replace("```", "").Trim();
         try
         {
-            var resultado = JsonSerializer.Deserialize<AiModelResult>(texto, JsonOptions);
-            return resultado is null || string.IsNullOrWhiteSpace(resultado.Reply)
-                ? throw new InvalidOperationException("Gemini devolvió un formato incompleto.")
-                : resultado;
+            return JsonSerializer.Deserialize<ModeloRespuesta>(texto, JsonOptions)
+                ?? throw new InvalidOperationException("Gemini devolvió un formato incompleto.");
         }
         catch (JsonException exception)
         {
@@ -201,72 +166,13 @@ public sealed class GeminiAssistantService
         }
     }
 
-    private AiActionResult? EjecutarAccion(AiAction? action, Equipo equipo, Guid miembroId)
-    {
-        if (action is null || !string.Equals(action.Type, "create_event", StringComparison.OrdinalIgnoreCase))
-            return null;
-        if (!DateOnly.TryParseExact(action.Fecha, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fecha) ||
-            !TimeOnly.TryParseExact(action.Hora, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var hora) ||
-            string.IsNullOrWhiteSpace(action.Nombre))
-            throw new InvalidOperationException("No se pudo validar la fecha, hora o nombre del evento.");
-
-        var evento = _calendarioService.AgregarEvento(
-            equipo.Id,
-            fecha,
-            action.Nombre.Trim(),
-            hora,
-            string.IsNullOrWhiteSpace(action.Lugar) ? null : action.Lugar.Trim(),
-            action.Descripcion,
-            miembroId);
-        return new AiActionResult("event_created", evento.Id, fecha);
-    }
-
-    private static bool EsSolicitudDeAgendamiento(string mensaje) =>
-        Regex.IsMatch(
-            mensaje,
-            @"\b(agenda|agendar|agendame|crear|crea|programa|programar|reserva|reservar)\b",
-            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-
-    private static AiAction? IntentarExtraerAgendamiento(string mensaje)
-    {
-        if (!EsSolicitudDeAgendamiento(mensaje))
-            return null;
-
-        var coincidencia = Regex.Match(
-            mensaje,
-            @"\b(?:agenda|agendar|agendame|crear|crea|programa|programar|reserva|reservar)\b\s+(?:un[ao]?\s+)?(?<nombre>.+?)\s+(?:el|para)\s+(?<fecha>\d{4}-\d{2}-\d{2})\s+(?:a las|a la|a)\s+(?<hora>\d{1,2}:\d{2})(?<resto>.*)$",
-            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-        if (!coincidencia.Success)
-            return null;
-
-        var nombre = coincidencia.Groups["nombre"].Value.Trim(' ', '.', ',', ':');
-        var hora = coincidencia.Groups["hora"].Value;
-        if (nombre.Length == 0)
-            return null;
-
-        var resto = coincidencia.Groups["resto"].Value;
-        var lugar = Regex.Match(
-            resto,
-            @"\ben\s+(?<lugar>.+?)(?:\s+con\b|\s+para\b|\s+sin\b|$)",
-            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-
-        return new AiAction(
-            "create_event",
-            coincidencia.Groups["fecha"].Value,
-            hora,
-            nombre,
-            lugar.Success ? lugar.Groups["lugar"].Value.Trim(' ', '.', ',') : null,
-            null);
-    }
-
-    private sealed record ContextoEvento(DateOnly Fecha, Evento Evento);
-    private sealed record AiModelResult(string Reply, AiAction? Action);
-    private sealed record AiAction(string Type, string Fecha, string Hora, string Nombre, string? Lugar, string? Descripcion);
-
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private sealed record Candidato(string Fecha, string Hora, string Lugar, int Libres, int Total, IReadOnlyList<string> Ocupados);
+    private sealed record ModeloRespuesta(string? Respuesta, IReadOnlyList<ModelPropuesta> Propuestas);
+    private sealed record ModelPropuesta(string Fecha, string Hora, string? Lugar, string Motivo);
 }
 
-public sealed record AiChatMessage(string Role, string Content);
-public sealed record AiChatRequest(Guid EquipoId, string Mensaje, IReadOnlyList<AiChatMessage>? Historial);
-public sealed record AiChatResponse(string Reply, AiActionResult? Action);
-public sealed record AiActionResult(string Type, Guid EventId, DateOnly Fecha);
+public sealed record AsistenteEstado(bool Disponible, string Modelo);
+public sealed record AsistenteMensaje(string Rol, string Texto);
+public sealed record AsistenteChatRequest(IReadOnlyList<AsistenteMensaje> Mensajes, DateOnly Hoy);
+public sealed record AsistentePropuesta(string Fecha, string Hora, string? Lugar, string Motivo, int Libres, int Total, IReadOnlyList<string> Ocupados);
+public sealed record AsistenteChatResponse(string Respuesta, IReadOnlyList<AsistentePropuesta> Propuestas, IReadOnlyList<string> Integrantes, IReadOnlyList<string> LugaresConsiderados);

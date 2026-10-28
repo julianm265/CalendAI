@@ -34,7 +34,11 @@ function mensajePorEstado(status) {
 function encabezadoDeSesion() {
   try {
     const colaborador = JSON.parse(sessionStorage.getItem('calendarioBackend.colaborador') || 'null');
-    return colaborador?.usuario ? { 'X-Usuario': colaborador.usuario } : {};
+    const token = colaborador?.token || sessionStorage.getItem('calendarioBackend.token');
+    return {
+      ...(colaborador?.usuario ? { 'X-Usuario': colaborador.usuario } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
   } catch {
     return {};
   }
@@ -49,7 +53,7 @@ function mensajeDesdeBody(body, fallback) {
     const mensajes = Object.values(body.errors).flat().filter(Boolean);
     if (mensajes.length) return mensajes.join(' ');
   }
-  return body.title || body.message || body.error || fallback;
+  return body.detail || body.title || body.message || body.error || fallback;
 }
 
 async function leerCuerpoDeError(response) {
@@ -203,10 +207,14 @@ export function obtenerLugaresPreferidos(equipoId, limite = 8) {
   return apiFetch(`/equipos/${encodeURIComponent(equipoId)}/lugares/preferidos?limite=${limite}`);
 }
 
-export function conversarConIA(equipoId, mensaje, historial = []) {
-  return apiFetch('/ia/chat', {
+export function obtenerEstadoAsistente(equipoId) {
+  return apiFetch(`/equipos/${encodeURIComponent(equipoId)}/asistente/estado`);
+}
+
+export function conversarConAsistente(equipoId, mensajes, hoy) {
+  return apiFetch(`/equipos/${encodeURIComponent(equipoId)}/asistente/chat`, {
     method: 'POST',
-    body: JSON.stringify({ equipoId, mensaje, historial }),
+    body: JSON.stringify({ mensajes, hoy }),
   });
 }
 
