@@ -27,9 +27,9 @@
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Calendai: Host=postgres;Port=5432;Database=${POSTGRES_DB:-calendai};Username=${POSTGRES_USER:-calendai_user};Password=${POSTGRES_PASSWORD}
       GooglePlaces__ApiKey: ${GOOGLE_PLACES_API_KEY:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-${GEMINI_KEY:-}}
-      GEMINI_KEY: ${GEMINI_KEY:-${GEMINI_API_KEY:-}}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      JWT_KEY: ${JWT_KEY:?Define JWT_KEY en el archivo .env}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
     depends_on:
       postgres:
         condition: service_healthy

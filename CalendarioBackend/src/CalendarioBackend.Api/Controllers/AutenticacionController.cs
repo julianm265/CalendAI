@@ -1,4 +1,5 @@
 using CalendarioBackend.Core.Services;
+using CalendarioBackend.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CalendarioBackend.Api.Controllers;
@@ -8,10 +9,12 @@ namespace CalendarioBackend.Api.Controllers;
 public class AutenticacionController : ControllerBase
 {
     private readonly AutenticacionService _autenticacionService;
+    private readonly JwtTokenService _tokens;
 
-    public AutenticacionController(AutenticacionService autenticacionService)
+    public AutenticacionController(AutenticacionService autenticacionService, JwtTokenService tokens)
     {
         _autenticacionService = autenticacionService;
+        _tokens = tokens;
     }
 
     [HttpPost("login")]
@@ -24,7 +27,8 @@ public class AutenticacionController : ControllerBase
                 new ColaboradorResumen(colaborador.Id, colaborador.Usuario),
                 _autenticacionService.ObtenerOCrearCalendarioPersonal(colaborador) is { } equipo
                     ? new EquipoLoginResumen(equipo.Id, equipo.NombreEquipo, equipo.LColaboradores.Count, equipo.EsPersonal)
-                    : null));
+                    : null,
+                _tokens.Crear(colaborador.Usuario)));
     }
 
     [HttpPost("registro")]
@@ -48,5 +52,5 @@ public class AutenticacionController : ControllerBase
 
 public sealed record LoginRequest(string Usuario, string Contraseña);
 public sealed record RegistroRequest(string Usuario, string Contraseña);
-public sealed record LoginResponse(ColaboradorResumen Colaborador, EquipoLoginResumen? Equipo);
+public sealed record LoginResponse(ColaboradorResumen Colaborador, EquipoLoginResumen? Equipo, string Token);
 public sealed record EquipoLoginResumen(Guid Id, string Nombre, int Colaboradores, bool EsPersonal);

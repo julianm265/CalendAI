@@ -162,11 +162,11 @@ mostrar datos simulados.
    contexto encontrado y permite crear un evento a partir de cada resultado.
    Los archivos no se guardan. Los PDF escaneados como imagen requieren OCR y
    no se detectan automáticamente.
-6. **Chat IA**: el botón flotante **Chat IA** conversa con Gemini a través de
-   `POST /api/ia/chat`. Puede resumir tendencias, consultar lugares frecuentes,
-   proponer horarios libres y agendar un evento cuando el usuario lo solicita
-   explícitamente. La clave de Gemini permanece en el backend; el navegador solo
-   envía el mensaje, el equipo activo y el historial reciente.
+6. **Chat IA**: el botón flotante **Chat IA** consulta
+   `GET /api/equipos/{id}/asistente/estado` y conversa mediante
+   `POST /api/equipos/{id}/asistente/chat`. Puede proponer hasta tres horarios
+   válidos. Cada propuesta solo rellena el formulario normal; el usuario debe
+   confirmar y guardar el evento. La clave de Gemini permanece en el backend.
 
 La sesión (`colaborador`) y el equipo activo se guardan en
 `sessionStorage` para sobrevivir recargas de la página, **pero no son un

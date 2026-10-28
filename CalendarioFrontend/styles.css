@@ -1172,9 +1172,16 @@ main#main {
 .ai-chat-heading p { margin-top: 0.2rem; color: var(--color-ink-soft); font-size: 0.78rem; }
 .ai-chat-avatar { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; background: #e8f2ff; color: #2f6fdb; }
 .ai-chat-messages { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 0.75rem; overflow-y: auto; padding: 1.25rem; }
+.ai-chat-suggestions { display: flex; gap: 0.4rem; overflow-x: auto; padding: 0 1rem 0.75rem; }
+.ai-chat-suggestion { flex: 0 0 auto; border: 1px solid rgba(124,157,211,0.35); border-radius: 999px; padding: 0.45rem 0.7rem; background: rgba(233,243,255,0.75); color: var(--color-navy-deep); cursor: pointer; font-size: 0.78rem; }
+.ai-chat-suggestion:hover { background: #dfeeff; }
 .ai-chat-welcome { max-width: 88%; padding: 0.85rem 1rem; border: 1px solid rgba(124, 157, 211, 0.2); border-radius: 0.9rem 0.9rem 0.9rem 0.2rem; background: rgba(233,243,255,0.8); line-height: 1.45; }
 .ai-chat-message { max-width: 88%; padding: 0.85rem 1rem; border-radius: 0.9rem 0.9rem 0.9rem 0.2rem; background: rgba(233,243,255,0.8); line-height: 1.45; white-space: pre-wrap; }
 .ai-chat-message-user { align-self: flex-end; border-radius: 0.9rem 0.9rem 0.2rem 0.9rem; background: #2f6fdb; color: #fff; }
+.ai-chat-proposals { display: flex; flex-direction: column; gap: 0.6rem; width: 100%; }
+.ai-chat-proposal { padding: 0.75rem; border: 1px solid rgba(124,157,211,0.3); border-radius: 0.7rem; background: rgba(255,255,255,0.8); }
+.ai-chat-proposal p { margin-bottom: 0.35rem; font-size: 0.85rem; line-height: 1.35; }
+.ai-chat-proposal .btn { padding: 0.45rem 0.7rem; font-size: 0.8rem; }
 .ai-chat-form { display: flex; gap: 0.5rem; padding: 1rem; border-top: 1px solid rgba(124, 157, 211, 0.2); }
 .ai-chat-form input { flex: 1; min-width: 0; border-radius: 999px; background: rgba(233,243,255,0.6); }
 .ai-chat-form .btn { width: 2.8rem; height: 2.8rem; padding: 0; border-radius: 50%; font-size: 1.15rem; }

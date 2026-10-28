@@ -12,6 +12,7 @@ export function normalizarColaborador(raw) {
     id: raw.id ?? raw.Id ?? null,
     usuario: raw.usuario ?? raw.Usuario ?? '',
     rol: raw.rol ?? raw.Rol ?? 'Miembro',
+    token: raw.token ?? raw.Token ?? null,
   };
 }
 
